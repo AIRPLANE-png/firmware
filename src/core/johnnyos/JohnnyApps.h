@@ -7,7 +7,7 @@
 // Existing Bruce Wi-Fi, Bluetooth, IR, File and Tools menus remain available.
 class JohnnyMenuItem final : public MenuItemInterface {
 public:
-    enum Kind : uint8_t { AI, GAMES, WIFI, SETTINGS, SYSTEM };
+    enum Kind : uint8_t { AI, GAMES, WIFI, SETTINGS, SYSTEM, PHONE, MOUSE, MEDIA, HELP };
     JohnnyMenuItem(const char *name, Kind kind) : MenuItemInterface(name), _kind(kind) {}
     void optionsMenu(void) override;
     void drawIcon(float scale) override;
