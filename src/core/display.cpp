@@ -1,4 +1,7 @@
 #include "display.h"
+#if defined(JOHNNYOS_STICKS3)
+#include "core/johnnyos/JohnnyApps.h"
+#endif
 #include "hal/power/gauge.h"
 #include "core/wifi/webInterface.h" // for server
 #include "core/wifi/wg.h"           //for isConnectedWireguard to print wireguard lock
@@ -1150,6 +1153,43 @@ Opt_Coord drawOptions(
 ** Description:   Função para desenhar e mostrar as opçoes de contexto
 ***************************************************************************************/
 void drawSubmenu(int index, std::vector<Option> &options, const char *title) {
+#if defined(JOHNNYOS_STICKS3)
+    // Native StickS3 first-level menu treatment. Original actions and Option
+    // objects remain completely unchanged. Other hardware uses Bruce UI.
+    if (options.empty()) return;
+    const int size = (int)options.size();
+    if (index < 0 || index >= size) return;
+    const uint16_t white = tft.color565(250, 252, 255);
+    const uint16_t secondary = tft.color565(166, 188, 225);
+    const uint16_t active = tft.color565(64, 100, 205);
+    johnnyDrawWallpaper();
+    tft.setTextSize(1);
+    tft.setTextColor(white);
+    String heading(title);
+    if (heading.length() > 26) heading = heading.substring(0, 26);
+    tft.drawString(heading, 12, 8, 2);
+    tft.setTextColor(secondary);
+    tft.drawRightString(String(index + 1) + "/" + String(size), tftWidth - 9, 9, 1);
+    tft.drawFastHLine(10, 26, tftWidth - 20, tft.color565(56, 77, 127));
+    const int visible = min(4, size);
+    const int start = max(0, min(index - 1, size - visible));
+    for (int j = 0; j < visible; j++) {
+        const int i = start + j;
+        const int y = 30 + j * 22;
+        const bool selected = i == index;
+        tft.fillRoundRect(10, y, tftWidth - 20, 19, 8,
+                          selected ? active : tft.color565(26, 37, 72));
+        if (selected) tft.drawRoundRect(10, y, tftWidth - 20, 19, 8,
+                                        tft.color565(153, 197, 255));
+        tft.setTextColor(!options[i].enabled ? tft.color565(110, 116, 132)
+                                              : (selected ? white : secondary));
+        tft.drawString(options[i].label.substring(0, 30), 20, y + 6, 1);
+        if (selected) tft.drawRightString(">", tftWidth - 19, y + 6, 1);
+    }
+    tft.setTextColor(secondary);
+    tft.drawCentreString("Tap move   Hold select / back", tftWidth / 2, tftHeight - 10, 1);
+    return;
+#endif
     drawStatusBar();
     int menuSize = options.size();
     tft.setTextColor(bruceConfig.priColor, bruceConfig.bgColor);
