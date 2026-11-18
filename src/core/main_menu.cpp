@@ -49,6 +49,9 @@ void MainMenu::begin(void) {
     options = {};
 
     bool gridStyle = bruceConfig.mainMenuStyle == MAIN_MENU_GRID;
+#if defined(JOHNNYOS_STICKS3)
+    gridStyle = true;
+#endif
 
     // Option::hover is a plain function pointer, so both renderers stay capture-less
     // and the grid one resolves its own position from the item pointer it receives.
@@ -111,6 +114,64 @@ void MainMenu::begin(void) {
 **  The hover callback is a plain function pointer and cannot capture the
 **  index, so it is resolved back from the item pointer it receives.
 **********************************************************************/
+
+#if defined(JOHNNYOS_STICKS3)
+void MainMenu::drawJohnnyLauncher(int index) {
+    const int count = (int)options.size();
+    if (count <= 0) return;
+    if (index < 0 || index >= count) index = 0;
+    const int w = tftWidth, h = tftHeight;
+    const int page = index / 8;
+    const uint16_t white = tft.color565(246, 249, 255);
+    const uint16_t secondary = tft.color565(176, 194, 230);
+    const uint16_t palette[] = {
+        tft.color565(86, 111, 242), tft.color565(37, 162, 232),
+        tft.color565(145, 91, 222), tft.color565(247, 119, 102),
+        tft.color565(57, 192, 169), tft.color565(225, 98, 154),
+        tft.color565(88, 139, 236), tft.color565(137, 146, 176)
+    };
+    // Compact gradient wallpaper for the actual 240 x 135 panel.
+    for (int y = 0; y < h; y += 3) {
+        int d = y < h / 2 ? y : h - y;
+        tft.fillRect(0, y, w, 3, tft.color565(10 + d / 5, 16 + d / 4, 43 + d / 2));
+    }
+    tft.setTextSize(1);
+    tft.setTextColor(white);
+    tft.drawString("JohnnyOS", 8, 5, 1);
+    tft.setTextColor(secondary);
+    tft.drawRightString(String(getBattery()) + "%", w - 8, 5, 1);
+    tft.drawFastHLine(8, 20, w - 16, tft.color565(64, 83, 133));
+    const int cellW = (w - 12) / 4;
+    for (int i = page * 8; i < min(count, (page + 1) * 8); ++i) {
+        int local = i - page * 8;
+        int x = 6 + (local % 4) * cellW;
+        int y = 25 + (local / 4) * 45;
+        int cx = x + cellW / 2;
+        int ix = cx - 13;
+        bool selected = i == index;
+        options[i].x = x;
+        options[i].y = y;
+        options[i].w = cellW;
+        options[i].h = 45;
+        if (selected) {
+            tft.drawRoundRect(ix - 3, y - 2, 32, 32, 9, white);
+            tft.drawRoundRect(ix - 2, y - 1, 30, 30, 9, palette[i % 8]);
+        }
+        tft.fillRoundRect(ix, y + 1, 26, 26, 7, palette[i % 8]);
+        String name = options[i].label;
+        String initials = name.substring(0, min(2, (int)name.length()));
+        initials.toUpperCase();
+        tft.setTextColor(white);
+        tft.drawCentreString(initials, cx, y + 9, 1);
+        tft.setTextColor(selected ? white : secondary);
+        tft.drawCentreString(name.substring(0, min(9, (int)name.length())), cx, y + 30, 1);
+    }
+    tft.setTextColor(secondary);
+    tft.drawString("Prev / Next", 8, h - 11, 1);
+    tft.drawRightString(String(page + 1) + "/" + String((count + 7) / 8), w - 8, h - 11, 1);
+}
+#endif
+
 int MainMenu::gridIndexOf(MenuItemInterface *item) {
     for (size_t i = 0; i < options.size(); i++) {
         if (options[i].hoverPointer == item) return (int)i;
@@ -186,6 +247,10 @@ void MainMenu::buildGridLayout(int itemCount) {
 **  changed are repainted unless the whole view has to come back.
 **********************************************************************/
 void MainMenu::drawGrid(int index) {
+#if defined(JOHNNYOS_STICKS3)
+    drawJohnnyLauncher(index);
+    return;
+#endif
     int itemCount = options.size();
     if (itemCount < 1) return;
     if (index < 0 || index >= itemCount) index = 0;
