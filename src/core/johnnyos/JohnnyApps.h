@@ -1,0 +1,25 @@
+#pragma once
+
+#if defined(JOHNNYOS_STICKS3)
+#include <MenuItemInterface.h>
+
+// JohnnyOS native apps run only on StickS3, preserving Bruce on other boards.
+// Existing Bruce Wi-Fi, Bluetooth, IR, File and Tools menus remain available.
+class JohnnyMenuItem final : public MenuItemInterface {
+public:
+    enum Kind : uint8_t { AI, GAMES, WIFI, SETTINGS, SYSTEM };
+    JohnnyMenuItem(const char *name, Kind kind) : MenuItemInterface(name), _kind(kind) {}
+    void optionsMenu(void) override;
+    void drawIcon(float scale) override;
+    bool hasTheme() override { return false; }
+    const String &themePath() override { static const String empty; return empty; }
+private:
+    Kind _kind;
+};
+
+uint8_t johnnyTheme();
+void johnnyCycleTheme();
+uint16_t johnnyRGB(uint8_t r, uint8_t g, uint8_t b);
+void johnnyDrawWallpaper();
+void johnnyDrawBoot();
+#endif
