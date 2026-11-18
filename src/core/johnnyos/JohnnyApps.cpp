@@ -54,7 +54,7 @@ void note(const String &message) {
 }
 void showAI() {
     int selected = 0;
-    const char *choices[] = {"Microphone tools", "Set up Wi-Fi", "AI service status", "Personality"};
+    const char *choices[] = {"Push-to-talk", "Play last voice", "AI service status", "Personality"};
     const char *personas[] = {"Friendly", "Tech", "Concise"};
     Preferences prefs;
     prefs.begin("johnnyos", true);
@@ -67,8 +67,8 @@ void showAI() {
         if (check(PrevPress)) { selected = (selected + 3) % 4; drawn = 0; }
         if (check(NextPress)) { selected = (selected + 1) % 4; drawn = 0; }
         if (check(SelPress)) {
-            if (selected == 0) mainMenu.othersMenu.micMenu();
-            else if (selected == 1) mainMenu.wifiMenu.optionsMenu();
+            if (selected == 0) johnnyPushToTalk();
+            else if (selected == 1) johnnyPlayLastVoice();
             else if (selected == 2) note("Online AI needs a secure service");
             else {
                 persona = (persona + 1) % 3;
