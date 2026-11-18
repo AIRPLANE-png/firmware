@@ -1,0 +1,54 @@
+name: JohnnyOS StickS3 Cloud Build
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/johnnyos-sticks3.yml'
+      - 'src/**'
+      - 'include/**'
+      - 'boards/**'
+      - 'platformio.ini'
+
+jobs:
+  build-sticks3:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout firmware with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install PlatformIO and dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install platformio requests esptool intelhex
+
+      - name: Compile StickS3 firmware
+        run: |
+          set -o pipefail
+          pio run -e m5stack-sticks3 2>&1 | tee sticks3-build.log
+
+      - name: List generated binary images
+        if: success()
+        run: |
+          find .pio/build/m5stack-sticks3 -maxdepth 1 -name '*.bin' -print || true
+          ls -lh Bruce-*.bin 2>/dev/null || true
+
+      - name: Upload firmware artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: JohnnyOS-StickS3-Baseline
+          path: |
+            Bruce-*.bin
+            .pio/build/m5stack-sticks3/*.bin
+            sticks3-build.log
+          if-no-files-found: error
+          retention-days: 14
