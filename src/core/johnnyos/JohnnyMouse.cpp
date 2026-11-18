@@ -80,7 +80,7 @@ void johnnyMouse() {
     hid->setManufacturer("JohnnyOS");
     hid->setPnp(0x02, 0x303A, 0x4100, 0x0100);
     hid->setHidInfo(0x00, 0x01);
-    hid->setReportMap(mouseDescriptor, sizeof(mouseDescriptor));
+    hid->setReportMap((uint8_t *)mouseDescriptor, sizeof(mouseDescriptor));
     hid->startServices();
     hid->setBatteryLevel((uint8_t)getBattery());
     NimBLEAdvertising *advertising = server->getAdvertising();
@@ -123,7 +123,7 @@ void johnnyMouse() {
         delay(12);
     }
     advertising->stop();
-    server->disconnect(0);
+    delete hid;
     NimBLEDevice::deinit(true);
     mouseConnected = false;
     check(NextPress); check(PrevPress); check(SelPress); check(EscPress);
