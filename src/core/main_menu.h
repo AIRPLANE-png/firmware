@@ -31,6 +31,10 @@ public:
     JohnnyMenuItem johnnyGames{"Games", JohnnyMenuItem::GAMES};
     JohnnyMenuItem johnnyThemes{"Themes", JohnnyMenuItem::SETTINGS};
     JohnnyMenuItem johnnySystem{"System", JohnnyMenuItem::SYSTEM};
+    JohnnyMenuItem johnnyPhone{"Phone Remote", JohnnyMenuItem::PHONE};
+    JohnnyMenuItem johnnyMouse{"Air Mouse", JohnnyMenuItem::MOUSE};
+    JohnnyMenuItem johnnyMedia{"Media", JohnnyMenuItem::MEDIA};
+    JohnnyMenuItem johnnyHelp{"Controls", JohnnyMenuItem::HELP};
 #endif
     FileMenu fileMenu;
     BleMenu bleMenu;
