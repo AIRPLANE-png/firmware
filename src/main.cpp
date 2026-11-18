@@ -1,4 +1,7 @@
 #include "core/main_menu.h"
+#if defined(JOHNNYOS_STICKS3)
+#include "core/johnnyos/JohnnyApps.h"
+#endif
 #include <globals.h>
 
 #include "core/bus_HAL.h"
@@ -288,6 +291,10 @@ void boot_screen() {
  **  Draw boot screen
  *********************************************************************/
 void boot_screen_anim() {
+#if defined(JOHNNYOS_STICKS3)
+    johnnyDrawBoot();
+    return;
+#endif
     boot_screen();
     int i = millis();
     // checks for boot.jpg in SD and LittleFS for customization
