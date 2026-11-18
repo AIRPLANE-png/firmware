@@ -23,12 +23,17 @@ JohnnyOS is a native ESP32-S3 firmware project built from Bruce; it is not a web
 
 - Entry-point native launcher with distinct vector icons, gradient wallpaper, status information, selection ring, and paged navigation.
 - Native animated boot splash.
-- Native **Johnny AI** dashboard with animated orb, honest service status, Bruce microphone tools, Wi-Fi setup, and persisted personality selection.
+- Native **Johnny AI** dashboard with animated orb, honest service status, real press-and-hold microphone recording to LittleFS, speaker playback and persisted personality selection.
 - Native Wi-Fi scanner listing *real* nearby SSIDs, RSSI and channel details.
 - Native games: Snake, Pong, Reaction, Mini Racing, Flappy. Two-button controls; high scores persisted for score-based games.
 - Native Theme picker with Ocean, Violet and Mint; NVS preferences persist across power cycles.
 - Native System view with battery, flash, PSRAM and available heap.
+- Native **Controls** guide with five illustrated navigation instruction pages.
+- PIN-protected **Phone Remote** server on port 8181 for authorized same-LAN menu navigation.
+- **Bluetooth Air Mouse** BLE HID mouse report descriptor with BMI270 gyroscope motion, click mapping and pairing screen (hardware validation pending).
+- **Bluetooth Media** launcher entry reusing Bruce's existing BLE media command implementation.
 - Existing Bruce WiFi, BLE (including BLE scan/media), IR, Files, Config and other tools unchanged.
+- Online AI conversations, offline speech recognition and AI speech generation are not implemented yet. These are not simulated as real capabilities.
 - CI validates that merged image exists, stays within total 8MB flash, and uploads a clearly named single firmware .bin.
 - Verify stability and flash image on a real StickS3 before approving as hardware-tested.
 
@@ -74,7 +79,10 @@ JohnnyOS is a native ESP32-S3 firmware project built from Bruce; it is not a web
 ## Code map
 
 - `src/core/main_menu.cpp/.h`: native launcher entry and Bruce app callback integration.
-- `src/core/johnnyos/JohnnyApps.cpp/.h`: native AI dashboard, Wi-Fi scan, games, themes, system information.
+- `src/core/johnnyos/JohnnyApps.cpp/.h`: native AI dashboard, Wi-Fi scan, games, themes, system information, controls.
+- `src/core/johnnyos/JohnnyPhone.cpp`: authorized phone LAN web remote.
+- `src/core/johnnyos/JohnnyMouse.cpp`: BLE HID air mouse and Bruce BLE media wrapper.
+- `src/core/johnnyos/JohnnyVoice.cpp`: native microphone push-to-talk WAV recording and playback.
 - `src/main.cpp`: JohnnyOS splash screen on StickS3.
 - `boards/m5stack-sticks3/interface.cpp`: GPIO, codec and power configuration.
 - `boards/m5stack-sticks3/m5stack-sticks3.ini`: board-scoped JohnnyOS compile flag.
