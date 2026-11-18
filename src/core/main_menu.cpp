@@ -226,6 +226,21 @@ void MainMenu::drawJohnnyLauncher(int index) {
             tft.drawRoundRect(cx - 10, iconY + 8, 20, 16, 3, white);
             tft.drawFastHLine(cx - 6, iconY + 13, 12, white);
             tft.fillRect(cx - 5, iconY + 17, 10, 3, white);
+        } else if (name == "Phone Remote") {
+            tft.drawRoundRect(cx - 7, iconY + 5, 14, 21, 3, white);
+            tft.drawFastHLine(cx - 3, iconY + 21, 6, white);
+            tft.fillCircle(cx, iconY + 23, 1, white);
+        } else if (name == "Air Mouse") {
+            tft.drawCircle(cx, iconY + 15, 8, white);
+            tft.drawLine(cx, iconY + 4, cx, iconY + 26, white);
+            tft.drawLine(cx - 10, iconY + 15, cx + 10, iconY + 15, white);
+        } else if (name == "Media") {
+            tft.fillTriangle(cx - 8, iconY + 7, cx - 8, iconY + 24, cx + 7, iconY + 15, white);
+            tft.fillRect(cx + 9, iconY + 9, 3, 12, white);
+        } else if (name == "Controls") {
+            tft.drawCircle(cx, iconY + 15, 11, white);
+            tft.fillCircle(cx, iconY + 9, 2, white);
+            tft.drawFastVLine(cx, iconY + 13, 10, white);
         } else {
             // Bruce's real icon is used for all legacy tools.
             MenuItemInterface *obj = static_cast<MenuItemInterface *>(options[i].hoverPointer);
