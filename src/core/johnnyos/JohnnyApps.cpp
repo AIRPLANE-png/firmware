@@ -1,4 +1,4 @@
-#include "johnnyos/JohnnyApps.h"
+#include "core/johnnyos/JohnnyApps.h"
 
 #if defined(JOHNNYOS_STICKS3)
 #include "core/display.h"
