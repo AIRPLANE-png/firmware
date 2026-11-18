@@ -2,6 +2,7 @@
 
 #if defined(JOHNNYOS_STICKS3)
 #include "core/display.h"
+#include "core/johnnyos/JohnnyExtras.h"
 #include "core/main_menu.h"
 #include "core/utils.h"
 #include "core/wifi/wifi_common.h"
@@ -327,6 +328,39 @@ void showGames() {
     addOptionToMainMenu();
     loopOptions(options, MENU_TYPE_SUBMENU, "Johnny Games");
 }
+void showControls() {
+    // This help screen is available at any time from the home-screen launcher.
+    // It describes the ACTUAL Bruce StickS3 two-navigation-button mapping.
+    const char *headings[] = {"HOME CONTROLS", "SELECT / BACK", "GAME CONTROLS", "AIR MOUSE", "PHONE REMOTE"};
+    const char *lineA[] = {"KEY 2: Previous", "KEY 1: Hold / double", "Snake: Prev = left", "Tilt: move cursor", "Use Wi-Fi with phone"};
+    const char *lineB[] = {"KEY 1: Next", "Select current app", "Next = right", "KEY 1: Left click", "Enter shown address"};
+    const char *lineC[] = {"POWER: Reset / Off", "KEY 2: Hold / double", "Hold PREV to exit", "KEY 2: Right click", "Enter code on phone"};
+    const char *lineD[] = {"", "Go back", "Pong: move paddle", "Hold PREV to exit", "Use Prev/Next/Select"};
+    int page = 0;
+    bool redraw = true;
+    clearInputs();
+    while (true) {
+        if (check(EscPress)) break;
+        if (check(NextPress)) { page = (page + 1) % 5; redraw = true; }
+        if (check(PrevPress)) { page = (page + 4) % 5; redraw = true; }
+        if (redraw) {
+            redraw = false;
+            titleBar("Controls", String(page + 1) + " / 5");
+            tft.fillRoundRect(9, 31, 222, 83, 12, panelColor());
+            tft.setTextColor(TEXT);
+            tft.drawCentreString(headings[page], tftWidth / 2, 38, 2);
+            tft.setTextColor(dimColor());
+            tft.drawCentreString(lineA[page], tftWidth / 2, 63, 1);
+            tft.drawCentreString(lineB[page], tftWidth / 2, 76, 1);
+            tft.drawCentreString(lineC[page], tftWidth / 2, 89, 1);
+            tft.drawCentreString(lineD[page], tftWidth / 2, 101, 1);
+            footer("Prev / Next: pages  |  Hold Prev: exit");
+        }
+        delay(25);
+    }
+    clearInputs();
+}
+
 } // namespace
 
 uint16_t johnnyRGB(uint8_t r, uint8_t g, uint8_t b) { return color(r, g, b); }
@@ -379,6 +413,10 @@ void JohnnyMenuItem::optionsMenu() {
         case WIFI: showWifi(); break;
         case SETTINGS: showSettings(); break;
         case SYSTEM: showSystem(); break;
+        case PHONE: johnnyPhoneRemote(); break;
+        case MOUSE: johnnyMouse(); break;
+        case MEDIA: johnnyMediaRemote(); break;
+        case HELP: showControls(); break;
     }
 }
 void JohnnyMenuItem::drawIcon(float) {
