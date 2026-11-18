@@ -51,6 +51,9 @@ public:
 
     // Grid layout rendering (bruceConfig.mainMenuStyle == MAIN_MENU_GRID)
     void drawGrid(int index);
+#if defined(JOHNNYOS_STICKS3)
+    void drawJohnnyLauncher(int index);
+#endif
     int gridIndexOf(MenuItemInterface *item);
 
     // Registered as gridPageTapHandler (see display.h) so loopOptions() can offer a page-up/down
