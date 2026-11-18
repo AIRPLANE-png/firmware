@@ -5,8 +5,20 @@
 
 MainMenu::MainMenu() {
     _menuItems = {
-        &wifiMenu,
+#if defined(JOHNNYOS_STICKS3)
+        &johnnyAi,
+        &johnnyWifi,
         &bleMenu,
+        &johnnyGames,
+        &irMenu,
+        &fileMenu,
+        &johnnyThemes,
+        &johnnySystem,
+#endif
+        &wifiMenu,
+#if !defined(JOHNNYOS_STICKS3)
+        &bleMenu,
+#endif
         &rfMenu,
         &nrf24Menu,
 #if !defined(LITE_VERSION)
@@ -15,13 +27,17 @@ MainMenu::MainMenu() {
 #if !defined(LITE_VERSION)
         &fmMenu,
 #endif
+#if !defined(JOHNNYOS_STICKS3)
         &irMenu,
+#endif
 #if !defined(LITE_VERSION)
         &ethernetMenu,
 #endif
         &gpsMenu,
         &rfidMenu,
+#if !defined(JOHNNYOS_STICKS3)
         &fileMenu,
+#endif
 #if !defined(LITE_VERSION) && !defined(DISABLE_INTERPRETER)
         &scriptsMenu,
 #endif
@@ -116,60 +132,116 @@ void MainMenu::begin(void) {
 **********************************************************************/
 
 #if defined(JOHNNYOS_STICKS3)
+// A native 240x135 iOS-inspired launcher: no web assets, no fake app callbacks.
 void MainMenu::drawJohnnyLauncher(int index) {
     const int count = (int)options.size();
-    if (count <= 0) return;
-    if (index < 0 || index >= count) index = 0;
-    const int w = tftWidth, h = tftHeight;
-    const int page = index / 8;
-    const uint16_t white = tft.color565(246, 249, 255);
-    const uint16_t secondary = tft.color565(176, 194, 230);
-    const uint16_t palette[] = {
-        tft.color565(86, 111, 242), tft.color565(37, 162, 232),
-        tft.color565(145, 91, 222), tft.color565(247, 119, 102),
-        tft.color565(57, 192, 169), tft.color565(225, 98, 154),
-        tft.color565(88, 139, 236), tft.color565(137, 146, 176)
+    if (count == 0) return;
+    index = constrain(index, 0, count - 1);
+    const int cols = 4;
+    const int perPage = 8;
+    const int page = index / perPage;
+    const uint16_t white = tft.color565(248, 251, 255);
+    const uint16_t muted = tft.color565(176, 195, 229);
+    const uint16_t accent[] = {
+        tft.color565(99, 104, 243), tft.color565(34, 172, 239),
+        tft.color565(65, 117, 239), tft.color565(255, 139, 91),
+        tft.color565(232, 83, 119), tft.color565(53, 159, 245),
+        tft.color565(143, 151, 170), tft.color565(95, 217, 171)
     };
-    // Compact gradient wallpaper for the actual 240 x 135 panel.
-    for (int y = 0; y < h; y += 3) {
-        int d = y < h / 2 ? y : h - y;
-        tft.fillRect(0, y, w, 3, tft.color565(10 + d / 5, 16 + d / 4, 43 + d / 2));
-    }
+    johnnyDrawWallpaper();
     tft.setTextSize(1);
     tft.setTextColor(white);
-    tft.drawString("JohnnyOS", 8, 5, 1);
-    tft.setTextColor(secondary);
-    tft.drawRightString(String(getBattery()) + "%", w - 8, 5, 1);
-    tft.drawFastHLine(8, 20, w - 16, tft.color565(64, 83, 133));
-    const int cellW = (w - 12) / 4;
-    for (int i = page * 8; i < min(count, (page + 1) * 8); ++i) {
-        int local = i - page * 8;
-        int x = 6 + (local % 4) * cellW;
-        int y = 25 + (local / 4) * 45;
-        int cx = x + cellW / 2;
-        int ix = cx - 13;
-        bool selected = i == index;
+    tft.drawString("Johnny", 9, 5, 2);
+    tft.setTextColor(tft.color565(124, 181, 255));
+    tft.drawString("OS", 61, 5, 2);
+    tft.setTextColor(muted);
+    tft.drawRightString(String(getBattery()) + "%", tftWidth - 8, 7, 1);
+    tft.drawFastHLine(9, 23, tftWidth - 18, tft.color565(64, 79, 129));
+
+    const int cellW = (tftWidth - 10) / cols;
+    for (int i = page * perPage; i < min(count, (page + 1) * perPage); i++) {
+        const int local = i - page * perPage;
+        const int x = 5 + (local % cols) * cellW;
+        const int y = 28 + (local / cols) * 46;
+        const int cx = x + cellW / 2;
+        const int iconX = cx - 15;
+        const int iconY = y;
+        const bool selected = i == index;
         options[i].x = x;
         options[i].y = y;
         options[i].w = cellW;
         options[i].h = 45;
+
+        const uint16_t mainColor = accent[i % 8];
         if (selected) {
-            tft.drawRoundRect(ix - 3, y - 2, 32, 32, 9, white);
-            tft.drawRoundRect(ix - 2, y - 1, 30, 30, 9, palette[i % 8]);
+            tft.fillRoundRect(iconX - 4, iconY - 4, 38, 39, 12, tft.color565(197, 222, 255));
+            tft.fillRoundRect(iconX - 2, iconY - 2, 34, 35, 10, tft.color565(44, 58, 114));
         }
-        tft.fillRoundRect(ix, y + 1, 26, 26, 7, palette[i % 8]);
-        String name = options[i].label;
-        String initials = name.substring(0, min(2, (int)name.length()));
-        initials.toUpperCase();
-        tft.setTextColor(white);
-        tft.drawCentreString(initials, cx, y + 9, 1);
-        tft.setTextColor(selected ? white : secondary);
-        tft.drawCentreString(name.substring(0, min(9, (int)name.length())), cx, y + 30, 1);
+        tft.fillRoundRect(iconX + 1, iconY + 3, 30, 31, 9, tft.color565(9, 16, 48));
+        tft.fillRoundRect(iconX, iconY, 30, 30, 9, mainColor);
+        tft.drawFastHLine(iconX + 8, iconY + 4, 14, tft.color565(190, 213, 254));
+
+        const String name = options[i].label;
+        if (name == "Johnny AI") {
+            // Sparkle inside the assistant icon.
+            tft.drawLine(cx, iconY + 5, cx, iconY + 25, white);
+            tft.drawLine(cx - 10, iconY + 15, cx + 10, iconY + 15, white);
+            tft.drawLine(cx - 6, iconY + 9, cx + 6, iconY + 21, white);
+            tft.drawLine(cx - 6, iconY + 21, cx + 6, iconY + 9, white);
+            tft.fillCircle(cx, iconY + 15, 3, white);
+        } else if (name == "Wi-Fi Scan" || name == "WiFi") {
+            tft.drawArc(cx, iconY + 24, 13, 11, 210, 330, white, mainColor);
+            tft.drawArc(cx, iconY + 24, 8, 6, 210, 330, white, mainColor);
+            tft.fillCircle(cx, iconY + 22, 2, white);
+        } else if (name == "BLE") {
+            tft.drawLine(cx, iconY + 5, cx, iconY + 25, white);
+            tft.drawLine(cx, iconY + 5, cx + 9, iconY + 12, white);
+            tft.drawLine(cx + 9, iconY + 12, cx - 8, iconY + 20, white);
+            tft.drawLine(cx - 8, iconY + 10, cx + 9, iconY + 20, white);
+            tft.drawLine(cx + 9, iconY + 20, cx, iconY + 25, white);
+        } else if (name == "Games") {
+            tft.fillRoundRect(cx - 11, iconY + 10, 22, 13, 5, white);
+            tft.drawFastHLine(cx - 7, iconY + 16, 7, mainColor);
+            tft.drawFastVLine(cx - 4, iconY + 13, 7, mainColor);
+            tft.fillCircle(cx + 5, iconY + 15, 2, mainColor);
+            tft.fillCircle(cx + 9, iconY + 18, 2, mainColor);
+        } else if (name == "IR") {
+            tft.drawCircle(cx, iconY + 16, 9, white);
+            tft.fillRect(cx - 3, iconY + 4, 6, 12, mainColor);
+            tft.drawFastVLine(cx, iconY + 5, 10, white);
+        } else if (name == "Files") {
+            tft.fillRoundRect(cx - 11, iconY + 10, 22, 14, 3, white);
+            tft.fillRect(cx - 10, iconY + 7, 9, 6, white);
+            tft.drawFastHLine(cx - 7, iconY + 16, 14, mainColor);
+        } else if (name == "Themes") {
+            tft.drawCircle(cx, iconY + 15, 9, white);
+            tft.fillCircle(cx - 4, iconY + 11, 2, tft.color565(255, 214, 98));
+            tft.fillCircle(cx + 5, iconY + 13, 2, tft.color565(91, 230, 193));
+            tft.fillCircle(cx, iconY + 20, 2, tft.color565(255, 140, 208));
+        } else if (name == "System") {
+            tft.drawRoundRect(cx - 10, iconY + 8, 20, 16, 3, white);
+            tft.drawFastHLine(cx - 6, iconY + 13, 12, white);
+            tft.fillRect(cx - 5, iconY + 17, 10, 3, white);
+        } else {
+            // Bruce's real icon is used for all legacy tools.
+            MenuItemInterface *obj = static_cast<MenuItemInterface *>(options[i].hoverPointer);
+            if (obj) obj->drawIconInBox(cx, iconY + 16, 23, white, mainColor);
+        }
+        String label = name;
+        if (name == "Johnny AI") label = "AI";
+        else if (name == "Wi-Fi Scan") label = "Wi-Fi";
+        else if (name == "BLE") label = "Bluetooth";
+        else if (name == "IR") label = "IR Remote";
+        tft.setTextColor(selected ? white : muted);
+        tft.drawCentreString(label.substring(0, 9), cx, iconY + 34, 1);
     }
-    tft.setTextColor(secondary);
-    tft.drawString("Prev / Next", 8, h - 11, 1);
-    tft.drawRightString(String(page + 1) + "/" + String((count + 7) / 8), w - 8, h - 11, 1);
+    // Native input map: GPIO11 next / hold select; GPIO12 previous / hold back.
+    tft.fillRoundRect(8, 121, tftWidth - 16, 12, 5, tft.color565(16, 26, 56));
+    tft.setTextColor(muted);
+    tft.drawString("Prev   Next  |  Hold: Select/Back", 13, 124, 1);
+    tft.drawRightString(String(page + 1) + "/" + String((count + 7) / 8), tftWidth - 10, 124, 1);
 }
+
 #endif
 
 int MainMenu::gridIndexOf(MenuItemInterface *item) {
