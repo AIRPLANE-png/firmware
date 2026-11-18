@@ -238,7 +238,7 @@ void MainMenu::drawJohnnyLauncher(int index) {
     // Native input map: GPIO11 next / hold select; GPIO12 previous / hold back.
     tft.fillRoundRect(8, 121, tftWidth - 16, 12, 5, tft.color565(16, 26, 56));
     tft.setTextColor(muted);
-    tft.drawString("Prev   Next  |  Hold: Select/Back", 13, 124, 1);
+    tft.drawString("Tap: move  Hold: select/back", 13, 124, 1);
     tft.drawRightString(String(page + 1) + "/" + String((count + 7) / 8), tftWidth - 10, 124, 1);
 }
 
