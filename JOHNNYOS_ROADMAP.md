@@ -5,7 +5,7 @@ JohnnyOS is a native ESP32-S3 firmware project built from Bruce; it is not a web
 ## Hardware budget and safety
 
 - Target board: M5Stack StickS3 / ESP32-S3-PICO-1-N8R8.
-- Flash: 8 MB total; PSRAM: 8 MB total. The current `custom_8Mb.csv` factory app partition is 0x4E0000 (4,? bytes), with a separate 0x300000 LittleFS data partition; monitor each compiler size.
+- Flash: 8 MB total; PSRAM: 8 MB total. The current `custom_8Mb.csv` factory app partition is 0x4E0000 (5,111,808 bytes, about 4.875 MiB), with a separate 0x300000 LittleFS data partition; monitor each compiler size.
 - Native screen: 135 x 240; the Bruce environment rotates it to 240 x 135 landscape. Do not design 320 x 480 graphics or ship a browser/webview.
 - The manufacturer lists 3 buttons including the power/reset key; the Bruce StickS3 port currently binds GPIO11 and GPIO12 to navigation. Do not reassign the power button without verifying power-management behavior.
 - Avoid replacing existing Wi-Fi, BLE, IR, file, config, or other tools: call into the working Bruce menus.
