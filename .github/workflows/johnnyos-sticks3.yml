@@ -11,6 +11,11 @@ on:
       - 'build.py'
       - 'JOHNNYOS_FLASHING.md'
 
+# Keep only the newest requested firmware build to avoid resource contention.
+concurrency:
+  group: johnnyos-sticks3-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-sticks3:
     runs-on: ubuntu-latest
