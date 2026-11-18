@@ -45,7 +45,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: JohnnyOS-StickS3-Baseline
+          name: JohnnyOS-StickS3-v1-Launcher
           path: |
             Bruce-*.bin
             .pio/build/m5stack-sticks3/*.bin
