@@ -44,11 +44,32 @@ Games reuse the two navigation buttons, with hold Back to exit. The final physic
 
 If the screen is black after a verified flash, capture 115200 baud serial boot output. That is required before claiming hardware compatibility.
 
+## JohnnyOS controls and new apps
+
+The current Bruce StickS3 firmware uses two menu buttons (plus separate power/reset).
+
+- GPIO11 / KEY1: tap **Next**, double-click or hold **Select**
+- GPIO12 / KEY2: tap **Previous**, double-click or hold **Back**
+- Open **Controls** from the launcher to review the button guide on the display.
+
+### Phone web remote
+
+Open **Phone Remote** and connect the StickS3 to Wi-Fi. It shows an 8-character access code and IP address ending in `:8181`. On your phone, join the same Wi-Fi network, open `http://<device-IP>:8181`, and type that code. You can then use Prev, Next, Select and Back from the phone. The server is local network only and does not expose unrelated tools through its HTTP API. Open Phone Remote again to choose **Stop phone remote**.
+
+### Bluetooth air mouse and media remote
+
+Open **Air Mouse**; pair your computer or phone with **JohnnyOS Mouse** using Bluetooth settings. Tilt the device to move the cursor. KEY1 tap = left click, KEY2 tap = right click, KEY2 hold = exit. This is a newly implemented Bluetooth HID mouse path and needs actual pairing and IMU testing. **Media** invokes Bruce's existing Bluetooth media-key application.
+
+### Johnny AI voice recording
+
+Open **Johnny AI** and select **Push-to-talk**. Hold KEY1 to speak and release to save a WAV file under `/johnnyos/last-voice.wav` on LittleFS. **Play last voice** uses the StickS3 speaker. This is genuine local recording/playback, **not cloud transcription or AI conversation yet**.
+
 ## Status
 
 This is a **development preview**, not a production-tested v1.0 release.
-The AI dashboard and microphone diagnostics exist, but **online AI conversations, offline speech recognition, AI voice responses, Bluetooth air mouse, and a dedicated phone web remote are not implemented**.
-Do not mistake the AI orb for a working speech service.
+Bluetooth HID mouse, phone remote, push-to-talk and games now have native source code, but require a successful complete build **and testing on the actual StickS3** before claiming they work.
+**Online conversational AI, reliable offline speech recognition, AI-generated replies and voice responses** still require extra implementation and, for online AI, an external AI service.
+Do not mistake the assistant orb for a working cloud AI service.
 
 Settings (themes, personality and game high scores) use NVS Preferences; they survive ordinary power loss and restart, but **an erase-all flash will wipe them**. Bruce's own settings remain managed by Bruce.
 
