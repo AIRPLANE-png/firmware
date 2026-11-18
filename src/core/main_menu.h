@@ -2,6 +2,9 @@
 #define __MAIN_MENU_H__
 
 #include <MenuItemInterface.h>
+#if defined(JOHNNYOS_STICKS3)
+#include "core/johnnyos/JohnnyApps.h"
+#endif
 
 #include "menu_items/BleMenu.h"
 #include "menu_items/ClockMenu.h"
@@ -22,6 +25,13 @@
 #include "menu_items/WireToolsMenu.h"
 class MainMenu {
 public:
+#if defined(JOHNNYOS_STICKS3)
+    JohnnyMenuItem johnnyAi{"Johnny AI", JohnnyMenuItem::AI};
+    JohnnyMenuItem johnnyWifi{"Wi-Fi Scan", JohnnyMenuItem::WIFI};
+    JohnnyMenuItem johnnyGames{"Games", JohnnyMenuItem::GAMES};
+    JohnnyMenuItem johnnyThemes{"Themes", JohnnyMenuItem::SETTINGS};
+    JohnnyMenuItem johnnySystem{"System", JohnnyMenuItem::SYSTEM};
+#endif
     FileMenu fileMenu;
     BleMenu bleMenu;
     ClockMenu clockMenu;
