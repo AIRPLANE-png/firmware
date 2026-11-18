@@ -1,6 +1,7 @@
 #include "display.h"
 #if defined(JOHNNYOS_STICKS3)
 #include "core/johnnyos/JohnnyApps.h"
+#include "core/johnnyos/JohnnyExtras.h"
 #endif
 #include "hal/power/gauge.h"
 #include "core/wifi/webInterface.h" // for server
@@ -761,6 +762,22 @@ int loopOptions(
             String txt = options[index].label;
             displayScrollingText(txt, coord, true);
         }
+#if defined(JOHNNYOS_STICKS3)
+        // Phone remote commands are consumed by the menu task, not the HTTP
+        // callback. Never let remote requests invoke arbitrary Bruce actions.
+        uint8_t remoteKey = 0;
+        if (johnnyRemotePop(remoteKey)) {
+            if (remoteKey == 1 || remoteKey == 2) {
+                const int n = findNextEnabled(index, remoteKey == 1 ? -1 : 1);
+                if (n >= 0) { index = n; redraw = true; }
+            } else if (remoteKey == 3) {
+                SelPress = true;
+            } else if (remoteKey == 4 && menuType != MENU_TYPE_MAIN) {
+                index = -1;
+                break;
+            }
+        }
+#endif
 #ifdef HAS_3_BUTTONS
         if (EscPress && PrevPress) EscPress = false;
 #endif
