@@ -2,6 +2,7 @@
 
 #if defined(JOHNNYOS_STICKS3)
 #include "core/display.h"
+#include "core/johnnyos/JohnnyApps.h"
 #include "core/utils.h"
 #include "core/wifi/wifi_common.h"
 #include <ESPAsyncWebServer.h>
