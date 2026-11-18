@@ -14,6 +14,10 @@ MainMenu::MainMenu() {
         &fileMenu,
         &johnnyThemes,
         &johnnySystem,
+        &johnnyPhone,
+        &johnnyMouse,
+        &johnnyMedia,
+        &johnnyHelp,
 #endif
         &wifiMenu,
 #if !defined(JOHNNYOS_STICKS3)
