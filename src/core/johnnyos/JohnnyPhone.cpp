@@ -83,7 +83,14 @@ hr{height:1px;border:0;background:#94b1e12b;margin:18px 0}
 <button class="ghost" onclick="loadSettings()">Refresh</button></div>
 <p class="note" style="margin-top:15px">Settings are applied through the device menu. If you are inside an app, return to the home screen after saving.</p>
 </section>
-<p class="note">Runs directly on your StickS3 over your local Wi-Fi. No cloud connection or download required.</p>
+<section class="card"><div class="row"><h2>Offline assistant</h2><span class="mini">ON DEVICE</span></div>
+<p>Ask about battery, controls, Wi-Fi, games, or settings. Answers come from a small built-in knowledge base, not a cloud model.</p>
+<label for="question">Question</label>
+<input id="question" maxlength="140" placeholder="How do I save battery?">
+<div class="row" style="margin:12px 0"><button class="primary" onclick="askOffline()">Ask offline</button></div>
+<p id="answer" aria-live="polite" style="white-space:pre-wrap;color:#e9f1ff">Your answer will appear here.</p>
+</section>
+<p class="note">The assistant works without internet. The browser page itself needs local Wi-Fi to reach your StickS3.</p>
 </main><script>
 const $=id=>document.getElementById(id), say=t=>$('status').textContent=t;
 const code=()=>$('pin').value.trim().toUpperCase();
@@ -102,6 +109,16 @@ if(!r.ok)throw Error(r.status===403?'Pairing code incorrect':'Could not load set
 let d=await r.json();$('nav').value=String(d.nav);$('theme').value=String(d.theme);$('power').value=String(d.power);
 say('Connected! Settings loaded.');}
 catch(e){say(e.message||'Connection failed')}
+}
+async function askOffline(){
+if(!valid())return;
+let q=$('question').value.trim();
+if(!q){say('Type a question first.');return}
+try{
+let r=await fetch('/ask',{method:'POST',headers:{...headers(),'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({q}),cache:'no-store'});
+if(!r.ok)throw Error(r.status===403?'Pairing code incorrect':'Offline assistant unavailable');
+$('answer').textContent=await r.text();say('Answered locally on StickS3.');
+}catch(e){say(e.message||'Cannot reach the device')}
 }
 async function saveSettings(){
 if(!valid())return;
