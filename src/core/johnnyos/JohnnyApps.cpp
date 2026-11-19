@@ -5,6 +5,7 @@
 #include "core/johnnyos/JohnnyExtras.h"
 #include "core/main_menu.h"
 #include "core/utils.h"
+#include "core/settings.h"
 #include "core/wifi/wifi_common.h"
 #include <Preferences.h>
 #include <WiFi.h>
@@ -14,6 +15,7 @@ namespace {
 constexpr uint16_t NAVY = 0x080B;
 constexpr uint16_t TEXT = 0xFFFF;
 uint8_t cachedTheme = 255;
+uint8_t cachedPowerMode = 255; // loaded once from Preferences; no NVS reads in render loops
 
 uint16_t color(uint8_t r, uint8_t g, uint8_t b) { return tft.color565(r, g, b); }
 uint16_t panelColor() { return color(27, 36, 70); }
@@ -127,21 +129,29 @@ void showSystem() {
 void showSettings() {
     clearInputs();
     bool redrawSettings = true;
+    const char *themes[] = {"OCEAN", "VIOLET", "MINT"};
+    const char *profiles[] = {"ECO", "BALANCED", "BRIGHT"};
     while (true) {
         if (redrawSettings) {
-        redrawSettings = false;
-        titleBar("Appearance", "Saved in NVS");
-        const char *themes[] = {"OCEAN", "VIOLET", "MINT"};
-        tft.fillRoundRect(12, 34, 216, 62, 15, panelColor());
-        tft.fillCircle(47, 65, 23, tint());
-        tft.setTextColor(TEXT);
-        tft.drawString("JohnnyOS theme", 89, 46, 1);
-        tft.drawString(themes[johnnyTheme()], 89, 69, 2);
-        footer("Next: change  Hold PREV: back");
+            redrawSettings = false;
+            titleBar("Appearance", "Saved settings");
+            tft.fillRoundRect(11, 29, 218, 79, 12, panelColor());
+            tft.fillCircle(38, 51, 13, tint());
+            tft.setTextColor(dimColor());
+            tft.drawString("THEME", 66, 36, 1);
+            tft.setTextColor(TEXT);
+            tft.drawString(themes[johnnyTheme()], 66, 48, 2);
+            tft.drawFastHLine(23, 69, 192, color(60, 77, 125));
+            tft.setTextColor(dimColor());
+            tft.drawString("POWER", 24, 77, 1);
+            tft.setTextColor(TEXT);
+            tft.drawRightString(profiles[johnnyPowerMode()], 212, 76, 2);
+            footer("NEXT: theme  SELECT: power  BACK");
         }
         if (check(EscPress)) break;
-        if (check(NextPress) || check(SelPress)) { johnnyCycleTheme(); redrawSettings = true; }
-        delay(30);
+        if (check(NextPress)) { johnnyCycleTheme(); redrawSettings = true; }
+        if (check(SelPress)) { johnnyCyclePowerMode(); redrawSettings = true; }
+        delay(25); // yield while idle; native buttons remain responsive
     }
     clearInputs();
 }
@@ -408,6 +418,38 @@ void johnnyCycleTheme() {
     prefs.begin("johnnyos", false);
     prefs.putUChar("theme", cachedTheme);
     prefs.end();
+}
+uint8_t johnnyPowerMode() {
+    if (cachedPowerMode > 2) {
+        Preferences prefs;
+        if (prefs.begin("johnnyos", true)) {
+            cachedPowerMode = prefs.getUChar("power", 1) % 3;
+            prefs.end();
+        } else cachedPowerMode = 1;
+    }
+    return cachedPowerMode;
+}
+void johnnyApplyPowerMode() {
+    // Display backlight dominates idle consumption; use Bruce's existing
+    // dimmer and wake paths so the two-button navigation still works.
+    // Only modify runtime state. The user's existing Bruce config file stays
+    // untouched and the profile itself is stored in JohnnyOS NVS.
+    const uint8_t mode = johnnyPowerMode();
+    const uint8_t brightness[] = {30, 58, 85};
+    const int dimSeconds[] = {10, 20, 30};
+    bruceConfig.bright = brightness[mode];
+    bruceConfig.dimmerSet = dimSeconds[mode];
+    previousMillis = millis();
+    if (!isSleeping && !isScreenOff) setBrightness(bruceConfig.bright, false);
+}
+void johnnyCyclePowerMode() {
+    cachedPowerMode = (johnnyPowerMode() + 1) % 3;
+    Preferences prefs;
+    if (prefs.begin("johnnyos", false)) {
+        prefs.putUChar("power", cachedPowerMode);
+        prefs.end();
+    }
+    johnnyApplyPowerMode(); // apply only after an explicit user selection
 }
 void johnnyDrawWallpaper() {
     const uint8_t theme = johnnyTheme();
