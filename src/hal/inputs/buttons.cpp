@@ -58,12 +58,18 @@ struct RapidKey {
 };
 RapidKey rapidKeys[2];
 uint16_t rapidHoldMs = 420;
-uint8_t rapidNext = 0, rapidPrev = 0, rapidSelect = 0, rapidBack = 0;
 constexpr uint8_t RAPID_MAX_QUEUE = 24;
 constexpr uint32_t RAPID_DEBOUNCE_MS = 14;
-
-void rapidPush(uint8_t &pending) {
-    if (pending < RAPID_MAX_QUEUE) pending++;
+// Keep fast taps in their actual order. A FIFO also prevents a hold Select
+// overtaking earlier movement events when the user taps very quickly.
+uint8_t rapidEvents[RAPID_MAX_QUEUE] = {};
+uint8_t rapidHead = 0, rapidTail = 0, rapidCount = 0;
+enum RapidAction : uint8_t { RAPID_NEXT = 1, RAPID_PREV, RAPID_SELECT, RAPID_BACK };
+void rapidPush(uint8_t action) {
+    if (rapidCount == RAPID_MAX_QUEUE) return; // bounded memory, no allocations
+    rapidEvents[rapidTail] = action;
+    rapidTail = (rapidTail + 1) % RAPID_MAX_QUEUE;
+    rapidCount++;
 }
 void rapidScan(RapidKey &key, int index, uint32_t now) {
     if (key.pin < 0) return;
@@ -83,23 +89,28 @@ void rapidScan(RapidKey &key, int index, uint32_t now) {
             AnyKeyPress = true;
         } else if (!key.holdSent && !key.waking) {
             const bool reversed = johnnySwapNavigation;
-            if ((index == 0) != reversed) rapidPush(rapidNext);
-            else rapidPush(rapidPrev);
+            if ((index == 0) != reversed) rapidPush(RAPID_NEXT);
+            else rapidPush(RAPID_PREV);
         }
     }
     if (key.down && !key.holdSent && !key.waking &&
         (uint32_t)(now - key.downAt) >= rapidHoldMs) {
         key.holdSent = true;
-        if (index == 0) rapidPush(rapidSelect);
-        else rapidPush(rapidBack);
+        if (index == 0) rapidPush(RAPID_SELECT);
+        else rapidPush(RAPID_BACK);
         AnyKeyPress = true;
     }
 }
 void rapidDeliver() {
-    if (rapidNext && !NextPress) { NextPress = true; rapidNext--; AnyKeyPress = true; }
-    if (rapidPrev && !PrevPress) { PrevPress = true; rapidPrev--; AnyKeyPress = true; }
-    if (rapidSelect && !SelPress) { SelPress = true; rapidSelect--; AnyKeyPress = true; }
-    if (rapidBack && !EscPress) { EscPress = true; rapidBack--; AnyKeyPress = true; }
+    if (!rapidCount || NextPress || PrevPress || SelPress || EscPress) return;
+    const uint8_t action = rapidEvents[rapidHead];
+    rapidHead = (rapidHead + 1) % RAPID_MAX_QUEUE;
+    rapidCount--;
+    if (action == RAPID_NEXT) NextPress = true;
+    else if (action == RAPID_PREV) PrevPress = true;
+    else if (action == RAPID_SELECT) SelPress = true;
+    else if (action == RAPID_BACK) EscPress = true;
+    AnyKeyPress = true;
 }
 } // namespace
 #endif
@@ -132,6 +143,7 @@ void hal_buttons_init_2(const DeviceButtons &cfg, uint16_t long_press_ms) {
 #if defined(JOHNNYOS_STICKS3)
     rapidKeys[0] = RapidKey{};
     rapidKeys[1] = RapidKey{};
+    rapidHead = rapidTail = rapidCount = 0;
     rapidKeys[0].pin = cfg.btn1;
     rapidKeys[1].pin = cfg.btn2;
     // 420ms to hold feels much faster than the old 600ms IDF hold.
