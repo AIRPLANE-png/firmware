@@ -35,7 +35,7 @@ String johnnyOfflineReply(const String &question) {
     if (has("button") || has("control") || has("key ") ||
         has("next") || has("previous") || has("back")) {
         return johnnyNavigationSwap()
-            ? "Your taps are reversed: Key 1 = Previous, Key 2 = Next. Hold or double Key 1 to Select; Key 2 to Back. Change taps in Controls or the browser."
+            ? "Your taps are reversed: Key 1 = Previous, Key 2 = Next. Hold Key 1 to Select and Key 2 to Back. Two quick taps move two apps. Change taps in Controls or the browser."
             : "Key 1 tap = Next; Key 2 tap = Previous. Hold or double Key 1 to Select; Key 2 to Back. Change taps in Controls or the browser.";
     }
     if (has("file") || has("folder") || has("storage") || has("sd card")) {
