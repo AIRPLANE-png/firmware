@@ -17,11 +17,20 @@ private:
     Kind _kind;
 };
 
+// Navigation mapping: only the two short presses may be swapped.
+// Long/double KEY1 remains Select, long/double KEY2 remains Back so
+// the device always has a predictable way to exit menus.
+extern volatile bool johnnySwapNavigation;
+void johnnyLoadControls();
+bool johnnyNavigationSwap();
+void johnnySetNavigationSwap(bool reversed);
 uint8_t johnnyTheme();
+void johnnySetTheme(uint8_t theme);
 void johnnyCycleTheme();
 // Stored power profiles: Eco, Balanced (default), Bright.
 // Applies existing Bruce brightness/dimmer mechanisms without altering radios.
 uint8_t johnnyPowerMode();
+void johnnySetPowerMode(uint8_t mode);
 void johnnyApplyPowerMode();
 void johnnyCyclePowerMode();
 uint16_t johnnyRGB(uint8_t r, uint8_t g, uint8_t b);
