@@ -193,7 +193,7 @@ void johnnyHomeLayout() {
         if(!found)names.push_back(name);
     }
     if(names.empty())return;
-    int sel=0,old=-1;bool full=true;
+    int sel=0,old=-1,lastCommand=-1;bool full=true;
     enum Action { BROWSE, EDIT }; Action action=BROWSE;
     int command=0;
     auto row=[&](int j){
@@ -231,7 +231,7 @@ void johnnyHomeLayout() {
             frame("Home Layout",action==BROWSE?"Tap: app  Hold 1: edit  Hold 2: exit":"Tap: action  Hold 1: do  Hold 2: back");
             if(action==BROWSE)for(int j=0;j<4;++j)row(j);
         }
-        if(action==EDIT){
+        if(action==EDIT && (full || command!=lastCommand)){
             const char* actions[]={"Pin as favorite","Move earlier","Move later","Done"};
             tft.fillRoundRect(8,29,224,82,9,rgb(23,39,74));
             tft.setTextColor(W);
@@ -241,8 +241,8 @@ void johnnyHomeLayout() {
                 tft.fillRoundRect(14,y,211,14,4,j==command?rgb(69,112,212):rgb(26,43,79));
                 tft.setTextColor(W);tft.drawString(actions[j],22,y+3,1);
             }
-        }else if(sel!=old){if(sel/4!=old/4){full=true;}else{row(old%4);row(sel%4);}}
-        old=sel;delay(25);
+        }else if(sel!=old && old>=0){if(sel/4!=old/4){full=true;}else{row(old%4);row(sel%4);}}
+        old=sel;lastCommand=command;delay(25);
     }
     drain();
 }
