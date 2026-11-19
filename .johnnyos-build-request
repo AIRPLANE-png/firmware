@@ -1,0 +1,4 @@
+# JohnnyOS v0.5 UI, browser controls and offline assistant
+# Explicit one-shot Actions build requested after source review.
+version=v0.5
+build_reason=icon-alignment-browser-settings-offline-assistant
