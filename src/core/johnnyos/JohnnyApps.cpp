@@ -19,6 +19,8 @@ constexpr uint16_t NAVY = 0x080B;
 constexpr uint16_t TEXT = 0xFFFF;
 uint8_t cachedTheme = 255;
 uint8_t cachedPowerMode = 255; // loaded once from Preferences; no NVS reads in render loops
+int8_t cachedAudio = -1, cachedPortrait = -1;
+uint8_t cachedWallpaper = 255;
 
 uint16_t color(uint8_t r, uint8_t g, uint8_t b) { return tft.color565(r, g, b); }
 uint16_t panelColor() { return color(27, 36, 70); }
@@ -61,33 +63,34 @@ void showAI() {
     int selected = 0;
     int previousSelection = -1;
     bool full = true;
-    const char *choices[] = {"Offline Q&A", "Record voice", "Play voice", "Online AI status", "Personality"};
+    const char *choices[] = {"Offline Q&A", "Record voice", "Play voice", "Online AI status", "Personality", "Audio: OFF"};
     const char *personas[] = {"Friendly", "Tech", "Concise"};
     Preferences prefs;
     prefs.begin("johnnyos", true);
     uint8_t persona = prefs.getUChar("persona", 0) % 3;
     prefs.end();
     auto drawAIChoice = [&](int i) {
-        if (i < 0 || i >= 5) return;
-        const int y = 26 + i * 18;
+        if (i < 0 || i >= 6) return;
+        const int y = 26 + i * 15;
         const bool active = selected == i;
-        tft.fillRoundRect(111, y, 121, 17, 6,
+        tft.fillRoundRect(111, y, 121, 14, 5,
                           active ? color(66, 102, 212) : panelColor());
         tft.setTextSize(1);
         tft.setTextColor(active ? TEXT : dimColor());
-        String label = i == 4 ? String("Style: ") + personas[persona] : choices[i];
+        String label = i == 4 ? String("Style: ") + personas[persona] : (i == 5 ? String("Audio: ") + (johnnySoundEnabled() ? "ON" : "OFF") : String(choices[i]));
         tft.drawString(label, 117, y + 4, 1);
     };
     clearInputs();
     while (true) {
         if (check(EscPress)) break;
-        if (check(PrevPress)) selected = (selected + 4) % 5;
-        if (check(NextPress)) selected = (selected + 1) % 5;
+        if (check(PrevPress)) selected = (selected + 5) % 6;
+        if (check(NextPress)) selected = (selected + 1) % 6;
         if (check(SelPress)) {
             if (selected == 0) { johnnyOfflineChat(); full = true; }
             else if (selected == 1) { johnnyPushToTalk(); full = true; }
             else if (selected == 2) { johnnyPlayLastVoice(); full = true; }
             else if (selected == 3) { note("Online AI needs a secure service"); full = true; }
+            else if (selected == 5) { johnnySetSoundEnabled(!johnnySoundEnabled()); full = true; }
             else {
                 persona = (persona + 1) % 3;
                 prefs.begin("johnnyos", false);
@@ -109,7 +112,7 @@ void showAI() {
             tft.drawCentreString("AI", cx, cy - 3, 1);
             tft.setTextColor(dimColor());
             tft.drawCentreString("OFFLINE READY", cx, 111, 1);
-            for (int i = 0; i < 5; ++i) drawAIChoice(i);
+            for (int i = 0; i < 6; ++i) drawAIChoice(i);
             footer("Short: move  Hold: select / back");
         } else if (previousSelection != selected) {
             drawAIChoice(previousSelection);
@@ -138,31 +141,55 @@ void showSystem() {
     clearInputs();
 }
 void showSettings() {
+    // Six settings are navigated uniformly. No mode depends on remembering
+    // a different key combination; tap moves, hold Key 1 changes, Key 2 exits.
+    const char *themes[] = {"Ocean", "Violet", "Mint"};
+    const char *powers[] = {"Eco", "Balanced", "Bright"};
+    const char *walls[] = {"Gradient", "Midnight", "Aurora"};
+    int focus = 0;
+    int previous = -1;
+    bool full = true;
     clearInputs();
-    bool redrawSettings = true;
-    const char *themes[] = {"OCEAN", "VIOLET", "MINT"};
-    const char *profiles[] = {"ECO", "BALANCED", "BRIGHT"};
+    auto renderRow = [&](int i) {
+        int y = 30 + i * 15;
+        bool active = i == focus;
+        tft.fillRoundRect(9, y, 221, 14, 5, active ? color(57, 93, 176) : panelColor());
+        tft.setTextColor(active ? TEXT : dimColor());
+        const char *labels[] = {"Theme", "Wallpaper", "Power saving", "Orientation", "Audio / volume", "Home layout"};
+        String val;
+        if (i == 0) val = themes[johnnyTheme()];
+        else if (i == 1) val = walls[johnnyWallpaperStyle()];
+        else if (i == 2) val = powers[johnnyPowerMode()];
+        else if (i == 3) val = johnnyPortrait() ? "Portrait" : "Landscape";
+        else if (i == 4) val = johnnySoundEnabled() ? "ON" : "OFF";
+        else val = "Customize >";
+        tft.drawString(labels[i], 16, y + 3, 1);
+        tft.drawRightString(val, 221, y + 3, 1);
+    };
     while (true) {
-        if (redrawSettings) {
-            redrawSettings = false;
-            titleBar("Appearance", "Saved settings");
-            tft.fillRoundRect(11, 29, 218, 79, 12, panelColor());
-            tft.fillCircle(38, 51, 13, tint());
-            tft.setTextColor(dimColor());
-            tft.drawString("THEME", 66, 36, 1);
-            tft.setTextColor(TEXT);
-            tft.drawString(themes[johnnyTheme()], 66, 48, 2);
-            tft.drawFastHLine(23, 69, 192, color(60, 77, 125));
-            tft.setTextColor(dimColor());
-            tft.drawString("POWER", 24, 77, 1);
-            tft.setTextColor(TEXT);
-            tft.drawRightString(profiles[johnnyPowerMode()], 212, 76, 2);
-            footer("NEXT: theme  SELECT: power  BACK");
-        }
         if (check(EscPress)) break;
-        if (check(NextPress)) { johnnyCycleTheme(); redrawSettings = true; }
-        if (check(SelPress)) { johnnyCyclePowerMode(); redrawSettings = true; }
-        delay(25); // yield while idle; native buttons remain responsive
+        if (check(NextPress)) focus = (focus + 1) % 6;
+        if (check(PrevPress)) focus = (focus + 5) % 6;
+        if (check(SelPress)) {
+            if (focus == 0) johnnyCycleTheme();
+            else if (focus == 1) johnnySetWallpaperStyle((johnnyWallpaperStyle() + 1) % 3);
+            else if (focus == 2) johnnyCyclePowerMode();
+            else if (focus == 3) johnnySetPortrait(!johnnyPortrait());
+            else if (focus == 4) johnnySetSoundEnabled(!johnnySoundEnabled());
+            else if (focus == 5) { johnnyHomeLayout(); full = true; }
+            full = true;
+        }
+        if (full) {
+            full = false;
+            titleBar("JohnnyOS Settings", "Personalize");
+            for (int i = 0; i < 6; ++i) renderRow(i);
+            footer("Tap: move  Hold 1: change  Hold 2: exit");
+        } else if (focus != previous) {
+            renderRow(previous < 0 ? 0 : previous);
+            renderRow(focus);
+        }
+        previous = focus;
+        delay(24);
     }
     clearInputs();
 }
@@ -475,6 +502,105 @@ void johnnySetNavigationSwap(bool reversed) {
     }
 }
 
+
+bool johnnySoundEnabled() {
+    if (cachedAudio < 0) {
+        Preferences p;
+        cachedAudio = 0; // Silent by default, even on a clean flash.
+        if (p.begin("johnnyos", true)) {
+            cachedAudio = p.getBool("sound", false) ? 1 : 0;
+            p.end();
+        }
+    }
+    return cachedAudio == 1;
+}
+void johnnySetSoundEnabled(bool enabled) {
+    cachedAudio = enabled ? 1 : 0;
+    Preferences p;
+    if (p.begin("johnnyos", false)) {
+        p.putBool("sound", enabled);
+        p.end();
+    }
+}
+bool johnnyPortrait() {
+    if (cachedPortrait < 0) {
+        Preferences p;
+        cachedPortrait = 0;
+        if (p.begin("johnnyos", true)) {
+            cachedPortrait = p.getBool("portrait", false) ? 1 : 0;
+            p.end();
+        }
+    }
+    return cachedPortrait == 1;
+}
+void johnnySetPortrait(bool portrait) {
+    cachedPortrait = portrait ? 1 : 0;
+    Preferences p;
+    if (p.begin("johnnyos", false)) {
+        p.putBool("portrait", portrait);
+        p.end();
+    }
+}
+uint8_t johnnyWallpaperStyle() {
+    if (cachedWallpaper > 2) {
+        Preferences p;
+        cachedWallpaper = 0;
+        if (p.begin("johnnyos", true)) {
+            cachedWallpaper = p.getUChar("wallpaper", 0) % 3;
+            p.end();
+        }
+    }
+    return cachedWallpaper;
+}
+void johnnySetWallpaperStyle(uint8_t style) {
+    if (style > 2) return;
+    cachedWallpaper = style;
+    Preferences p;
+    if (p.begin("johnnyos", false)) {
+        p.putUChar("wallpaper", style);
+        p.end();
+    }
+}
+void johnnyPrepareAppScreen() {
+    // Keep Bruce and all legacy JohnnyOS apps in their tested landscape
+    // geometry. Portrait is deliberately a launcher-only preference.
+    tft.setRotation(3);
+    bruceConfigPins.rotation = 3;
+    tftWidth = tft.width();
+    tftHeight = tft.height();
+}
+String johnnyFavorite() {
+    Preferences p;
+    String label = "Johnny AI";
+    if (p.begin("johnnyos", true)) {
+        label = p.getString("favorite", "Johnny AI");
+        p.end();
+    }
+    return label;
+}
+void johnnySetFavorite(const String &label) {
+    Preferences p;
+    if (p.begin("johnnyos", false)) {
+        p.putString("favorite", label.substring(0, 36));
+        p.end();
+    }
+}
+String johnnyHomeOrder() {
+    Preferences p;
+    String value;
+    if (p.begin("johnnyos", true)) {
+        value = p.getString("homeorder", "");
+        p.end();
+    }
+    return value;
+}
+void johnnySetHomeOrder(const String &order) {
+    Preferences p;
+    if (p.begin("johnnyos", false)) {
+        p.putString("homeorder", order.substring(0, 400));
+        p.end();
+    }
+}
 uint8_t johnnyTheme() {
     if (cachedTheme > 2) {
         Preferences prefs;
@@ -530,8 +656,15 @@ void johnnySetPowerMode(uint8_t mode) {
 void johnnyCyclePowerMode() { johnnySetPowerMode((johnnyPowerMode() + 1) % 3); }
 void johnnyDrawWallpaper() {
     const uint8_t theme = johnnyTheme();
+    const uint8_t style = johnnyWallpaperStyle();
+    if (style == 1) {
+        tft.fillScreen(color(theme == 1 ? 29 : 12, theme == 2 ? 39 : 19, 49));
+        tft.fillCircle(tftWidth - 25, 11, 22, color(47, 67, 111));
+        return;
+    }
     for (int y = 0; y < tftHeight; y += 3) {
         int d = y < tftHeight / 2 ? y : tftHeight - y;
+        if (style == 2) d = max(0, min(67, d + ((y / 12) % 2 ? 18 : 0)));
         if (theme == 1) tft.fillRect(0, y, tftWidth, 3, color(23 + d / 4, 12 + d / 6, 56 + d / 2));
         else if (theme == 2) tft.fillRect(0, y, tftWidth, 3, color(8 + d / 7, 32 + d / 4, 37 + d / 3));
         else tft.fillRect(0, y, tftWidth, 3, color(10 + d / 5, 17 + d / 4, 47 + d / 2));
