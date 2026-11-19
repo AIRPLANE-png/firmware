@@ -125,6 +125,7 @@ void MainMenu::begin(void) {
         _johnnyLastPage = -1;
         _johnnyLastCount = -1;
         _johnnyLastTheme = 255;
+        _johnnyLastSwap = false;
 #endif
         mainMenuGridColumns = _grid.cols;
     } else {
@@ -161,7 +162,8 @@ void MainMenu::drawJohnnyLauncher(int index) {
     // Keep the current page in display RAM. Only repaint on page changes.
     const uint8_t theme = johnnyTheme();
     const bool full = _johnnyLastIndex < 0 || _johnnyLastPage != page ||
-                      _johnnyLastCount != count || _johnnyLastTheme != theme;
+                      _johnnyLastCount != count || _johnnyLastTheme != theme ||
+                      _johnnyLastSwap != johnnyNavigationSwap();
     if (full) {
         johnnyDrawWallpaper();
     tft.setTextSize(1);
@@ -303,6 +305,7 @@ void MainMenu::drawJohnnyLauncher(int index) {
     _johnnyLastPage = page;
     _johnnyLastCount = count;
     _johnnyLastTheme = theme;
+    _johnnyLastSwap = johnnyNavigationSwap();
 }
 
 #endif
