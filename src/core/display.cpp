@@ -149,12 +149,22 @@ bool wakeUpScreen() {
         isScreenOff = false;
         dimmer = false;
         getBrightness();
+#if defined(JOHNNYOS_STICKS3)
+        // StickS3 backlight uses a fast PWM driver; wake needn't block UI 200 ms.
+        vTaskDelay(pdMS_TO_TICKS(60));
+#else
         vTaskDelay(pdMS_TO_TICKS(200));
+#endif
         return true;
     } else if (dimmer) {
         dimmer = false;
         getBrightness();
+#if defined(JOHNNYOS_STICKS3)
+        // StickS3 backlight uses a fast PWM driver; wake needn't block UI 200 ms.
+        vTaskDelay(pdMS_TO_TICKS(60));
+#else
         vTaskDelay(pdMS_TO_TICKS(200));
+#endif
         return true;
     }
     return false;
