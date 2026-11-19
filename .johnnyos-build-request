@@ -1,4 +1,5 @@
-# JohnnyOS v0.5 UI, browser controls and offline assistant
-# Explicit one-shot Actions build requested after source review.
-version=v0.5
-build_reason=icon-alignment-browser-settings-offline-assistant
+# JohnnyOS Visual Edition v0.6 explicit build
+# Updated only after all source files and docs are committed.
+version=v0.6
+features=portrait-mute-wallpapers-favorite-layout-calculator-2048-files-performance-phone-dashboard
+build_request=visual-edition-first-compile
