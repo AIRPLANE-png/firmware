@@ -61,8 +61,8 @@ status.textContent=res.ok?'Command sent':res.status===403?'Code incorrect':'Remo
 
 void waitForBack(const String &heading, const String &line1, const String &line2) {
     check(EscPress);
-    while (true) {
-        johnnyDrawWallpaper();
+    // Pairing screen is static. Never repaint the entire display on a timer.
+    johnnyDrawWallpaper();
         tft.setTextColor(tft.color565(249, 252, 255));
         tft.drawString(heading, 12, 9, 2);
         tft.fillRoundRect(12, 38, 216, 68, 13, tft.color565(30, 43, 81));
@@ -70,9 +70,7 @@ void waitForBack(const String &heading, const String &line1, const String &line2
         tft.setTextColor(tft.color565(172, 201, 243));
         tft.drawCentreString(line2, 120, 79, 1);
         tft.drawCentreString("Hold PREV to return", 120, 121, 1);
-        if (check(EscPress)) break;
-        delay(180);
-    }
+    while (!check(EscPress)) delay(80);
     check(EscPress);
 }
 void stopRemote() {
