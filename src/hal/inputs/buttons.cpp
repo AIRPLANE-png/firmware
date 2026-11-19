@@ -7,7 +7,7 @@
 #include "core/johnnyos/JohnnyApps.h"
 #endif
 
-#if defined(BUTTONS_IDF_COMPONENT)
+#if defined(BUTTONS_IDF_COMPONENT) && !defined(JOHNNYOS_STICKS3)
 #include <Button.h>
 
 static Button *hal2Btn1 = nullptr;
@@ -39,6 +39,71 @@ static void hal2OnBtn2Long(void *, void *) { hal2PendingEsc = true; }
 static void hal2OnBtn2Double(void *, void *) { hal2PendingEsc = true; }
 #endif
 
+#if defined(JOHNNYOS_STICKS3)
+// Direct, debounce-filtered GPIO input for fast repeated tapping.
+//
+// The IDF Button component delays single-click delivery while it checks for
+// a double-click. That makes repeated fast app navigation feel unresponsive.
+// We intentionally reserve hold for Select / Back; two quick taps are two
+// navigation steps, never an accidental double-click activation.
+namespace {
+struct RapidKey {
+    int8_t pin = -1;
+    bool raw = false;
+    bool down = false;
+    bool holdSent = false;
+    bool waking = false;
+    uint32_t edgeAt = 0;
+    uint32_t downAt = 0;
+};
+RapidKey rapidKeys[2];
+uint16_t rapidHoldMs = 420;
+uint8_t rapidNext = 0, rapidPrev = 0, rapidSelect = 0, rapidBack = 0;
+constexpr uint8_t RAPID_MAX_QUEUE = 24;
+constexpr uint32_t RAPID_DEBOUNCE_MS = 14;
+
+void rapidPush(uint8_t &pending) {
+    if (pending < RAPID_MAX_QUEUE) pending++;
+}
+void rapidScan(RapidKey &key, int index, uint32_t now) {
+    if (key.pin < 0) return;
+    const bool raw = digitalRead(key.pin) == LOW;
+    if (raw != key.raw) {
+        key.raw = raw;
+        key.edgeAt = now;
+    }
+    if (raw != key.down && (uint32_t)(now - key.edgeAt) >= RAPID_DEBOUNCE_MS) {
+        key.down = raw;
+        if (raw) {
+            key.downAt = now;
+            key.holdSent = false;
+            // The first press simply wakes a sleeping LCD, so it cannot open
+            // an unseen app or act as a hold while the display was asleep.
+            key.waking = wakeUpScreen();
+            AnyKeyPress = true;
+        } else if (!key.holdSent && !key.waking) {
+            const bool reversed = johnnySwapNavigation;
+            if ((index == 0) != reversed) rapidPush(rapidNext);
+            else rapidPush(rapidPrev);
+        }
+    }
+    if (key.down && !key.holdSent && !key.waking &&
+        (uint32_t)(now - key.downAt) >= rapidHoldMs) {
+        key.holdSent = true;
+        if (index == 0) rapidPush(rapidSelect);
+        else rapidPush(rapidBack);
+        AnyKeyPress = true;
+    }
+}
+void rapidDeliver() {
+    if (rapidNext && !NextPress) { NextPress = true; rapidNext--; AnyKeyPress = true; }
+    if (rapidPrev && !PrevPress) { PrevPress = true; rapidPrev--; AnyKeyPress = true; }
+    if (rapidSelect && !SelPress) { SelPress = true; rapidSelect--; AnyKeyPress = true; }
+    if (rapidBack && !EscPress) { EscPress = true; rapidBack--; AnyKeyPress = true; }
+}
+} // namespace
+#endif
+
 static void configurePin(int8_t pin, bool pullup) {
     if (pin < 0) return;
     if (pullup) pinMode(pin, INPUT_PULLUP);
@@ -64,7 +129,23 @@ void hal_buttons_init(const DeviceButtons &cfg, uint8_t count) {
 }
 
 void hal_buttons_init_2(const DeviceButtons &cfg, uint16_t long_press_ms) {
-#if defined(BUTTONS_IDF_COMPONENT)
+#if defined(JOHNNYOS_STICKS3)
+    rapidKeys[0] = RapidKey{};
+    rapidKeys[1] = RapidKey{};
+    rapidKeys[0].pin = cfg.btn1;
+    rapidKeys[1].pin = cfg.btn2;
+    // 420ms to hold feels much faster than the old 600ms IDF hold.
+    // Do not silently reduce holds below 350ms: rapid taps must stay safe.
+    rapidHoldMs = constrain((int)long_press_ms, 350, 500);
+    for (auto &key : rapidKeys) {
+        if (key.pin >= 0) {
+            pinMode(key.pin, INPUT_PULLUP);
+            key.raw = key.down = digitalRead(key.pin) == LOW;
+            key.edgeAt = key.downAt = millis();
+            key.waking = key.down; // do not activate buttons held during boot
+        }
+    }
+#elif defined(BUTTONS_IDF_COMPONENT)
     button_config_t btn1Cfg = {
         .type = BUTTON_TYPE_GPIO,
         .long_press_time = long_press_ms,
@@ -81,7 +162,6 @@ void hal_buttons_init_2(const DeviceButtons &cfg, uint16_t long_press_ms) {
     hal2Btn1->attachSingleClickEventCb(&hal2OnBtn1Click, nullptr);
     hal2Btn1->attachDoubleClickEventCb(&hal2OnBtn1Double, nullptr);
     hal2Btn1->attachLongPressStartEventCb(&hal2OnBtn1Long, nullptr);
-
     hal2Btn2 = new Button(btn2Cfg);
     hal2Btn2->attachSingleClickEventCb(&hal2OnBtn2Click, nullptr);
     hal2Btn2->attachDoubleClickEventCb(&hal2OnBtn2Double, nullptr);
@@ -93,20 +173,18 @@ void hal_buttons_init_2(const DeviceButtons &cfg, uint16_t long_press_ms) {
 }
 
 void hal_buttons_poll_2() {
-#if defined(BUTTONS_IDF_COMPONENT)
-    // The button component delivers debounced click/hold events. Pass them
-    // through immediately; there is no benefit to another 200ms gate.
+#if defined(JOHNNYOS_STICKS3)
+    const uint32_t now = millis();
+    rapidScan(rapidKeys[0], 0, now);
+    rapidScan(rapidKeys[1], 1, now);
+    rapidDeliver();
+#elif defined(BUTTONS_IDF_COMPONENT)
     if (!(hal2PendingNext || hal2PendingPrev || hal2PendingSel || hal2PendingEsc)) return;
     const bool next = hal2PendingNext;
     const bool prev = hal2PendingPrev;
     const bool select = hal2PendingSel;
     const bool back = hal2PendingEsc;
-    hal2PendingNext = false;
-    hal2PendingPrev = false;
-    hal2PendingSel = false;
-    hal2PendingEsc = false;
-
-    // First input wakes an idle display without activating a hidden item.
+    hal2PendingNext = hal2PendingPrev = hal2PendingSel = hal2PendingEsc = false;
     if (wakeUpScreen()) return;
     AnyKeyPress = true;
     NextPress = next;
