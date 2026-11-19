@@ -20,41 +20,97 @@ uint32_t lastCommandMs = 0;
 const char REMOTE_UI[] PROGMEM = R"JOHNNY(
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JohnnyOS Remote</title><style>
-:root{color-scheme:dark}*{box-sizing:border-box}
-body{font:16px system-ui,Arial;background:radial-gradient(circle at 75% 5%,#3046a1,#141b3b 52%,#080d1d);color:#f5f8ff;max-width:470px;margin:auto;min-height:100vh;padding:25px 22px;text-align:center}
-h1{font-size:37px;letter-spacing:-2px;margin:16px 0 0}
-i{font-style:normal;color:#9abfff}
-p{color:#b4c4e5;line-height:1.5}
-.card{background:#ffffff17;border:1px solid #ffffff29;border-radius:23px;padding:20px;margin:22px 0;box-shadow:0 10px 30px #0003}
-input{width:100%;font:inherit;background:#101b39;border:1px solid #6679ab;border-radius:14px;padding:15px;color:white;letter-spacing:2px;text-align:center}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-button{min-height:74px;border:1px solid #b4d0ff7b;border-radius:21px;font-size:19px;font-weight:700;color:white;background:linear-gradient(140deg,#506cf5,#2943a2);touch-action:manipulation;box-shadow:0 5px 0 #111b3e;cursor:pointer}
-button:active{transform:translateY(3px);box-shadow:none}
-button.secondary{background:linear-gradient(140deg,#536584,#273852)}
-#status{min-height:2em;font-size:13px;color:#a9d2ff;margin-top:15px}
-small{color:#9caccf}
-</style></head><body>
-<h1>Johnny<i>OS</i></h1><p>Your StickS3, from your phone.</p>
-<div class="card"><p>Type the 8-character code shown on the StickS3 screen.</p>
-<input id="pin" maxlength="8" placeholder="DEVICE CODE" autocomplete="off" spellcheck="false">
-</div><div class="grid">
-<button class="secondary" onclick="go('prev')">◀ Previous</button>
-<button onclick="go('next')">Next ▶</button>
-<button onclick="go('select')">● Select</button>
-<button class="secondary" onclick="go('back')">↶ Back</button>
-</div><div id="status">Ready to connect</div>
-<small>Local network only. Phone control is limited to menu navigation.</small>
-<script>
+<meta name="theme-color" content="#10152b">
+<title>JohnnyOS Control Center</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;color:#eef4ff;background:radial-gradient(ellipse at 50% 0,#263b73 0%,#111a37 48%,#090e20 100%);min-height:100vh}
+main{width:min(100%,530px);padding:22px 19px 42px;margin:auto}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:23px}
+.logo{font-size:29px;font-weight:850;letter-spacing:-1.5px}.logo span{color:#8ecaff}
+.mini{font-size:12px;font-weight:700;border:1px solid #7597c566;background:#20345a88;color:#c3d8fb;padding:7px 11px;border-radius:100px}
+h1{font-size:23px;letter-spacing:-.6px;margin:0 0 8px}h2{font-size:16px;margin:0 0 13px}
+p{font-size:13px;line-height:1.5;color:#b5c6e7;margin:0 0 13px}
+.card{border:1px solid #6578a64d;background:#f0f5ff0d;border-radius:22px;padding:19px;margin-bottom:15px;box-shadow:0 8px 30px #0002}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+label{font-size:13px;font-weight:650;color:#d9e5ff}
+input,select{display:block;width:100%;font:inherit;font-size:15px;background:#111d3b;color:#fff;border:1px solid #7997ca70;border-radius:12px;padding:12px;outline:none}
+input:focus,select:focus{border-color:#9cc7ff;box-shadow:0 0 0 3px #5d9afd35}
+#pin{text-transform:uppercase;letter-spacing:2px;max-width:170px;font-weight:750;text-align:center}
+button{border:0;border-radius:15px;color:#fff;font:inherit;font-weight:750;cursor:pointer;touch-action:manipulation;transition:transform .09s,background .09s}
+button:active{transform:scale(.97)}button:focus-visible{outline:3px solid #c9deff;outline-offset:3px}
+.primary{background:linear-gradient(155deg,#619bff,#4258d7);padding:12px 16px;min-height:45px}
+.ghost{background:#344970;padding:10px 13px;min-height:42px}
+.nav{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.nav button{min-height:74px;font-size:18px;background:linear-gradient(160deg,#4866c1,#273d83);border:1px solid #a1baff45}
+.nav .important{background:linear-gradient(155deg,#6a8eff,#4565eb)}
+.nav small{display:block;font-weight:500;font-size:11px;color:#d6e4ff;margin-top:3px}
+.setting{margin-top:14px}.setting select{margin-top:7px}
+hr{height:1px;border:0;background:#94b1e12b;margin:18px 0}
+#status{font-size:13px;min-height:24px;color:#b2d5ff;padding:4px 2px 0}
+.note{color:#9eafd2;font-size:12px;line-height:1.5}
+@media(hover:hover){button:hover{filter:brightness(1.12)}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style></head><body><main>
+<header><div class="logo">Johnny<span>OS</span></div><div class="mini">STICKS3 LOCAL</div></header>
+<section class="card"><h1>Your control center</h1>
+<p>Control your StickS3 and customize its look and button direction from this phone or computer.</p>
+<div class="row"><label for="pin">Pairing code</label><input id="pin" maxlength="8" placeholder="8-CHAR CODE" autocomplete="off" spellcheck="false"></div>
+<p style="margin-top:9px">Get the code from the StickS3 Phone Remote screen.</p>
+<button class="primary" onclick="loadSettings()">Connect &amp; load settings</button>
+<div id="status" role="status" aria-live="polite">Enter your device pairing code to begin.</div>
+</section>
+<section class="card"><div class="row"><h2>Remote control</h2><span class="mini">MENU</span></div>
+<div class="nav">
+<button onclick="go('prev')">◀ Previous<small>Move left / up</small></button>
+<button onclick="go('next')">Next ▶<small>Move right / down</small></button>
+<button class="important" onclick="go('select')">● Select<small>Open item</small></button>
+<button onclick="go('back')">↶ Back<small>Exit a menu</small></button>
+</div></section>
+<section class="card"><div class="row"><h2>Customize JohnnyOS</h2><span class="mini">PREFERENCES</span></div>
+<p>Saved on your StickS3. Hold / double-tap actions stay fixed so you can always Select and Back.</p>
+<div class="setting"><label for="nav">Physical navigation taps</label>
+<select id="nav"><option value="0">Standard: Key 1 Next / Key 2 Previous</option>
+<option value="1">Reversed: Key 1 Previous / Key 2 Next</option></select></div>
+<div class="setting"><label for="theme">Color theme</label><select id="theme">
+<option value="0">Ocean blue</option><option value="1">Violet</option><option value="2">Mint</option></select></div>
+<div class="setting"><label for="power">Display power</label><select id="power">
+<option value="0">Eco - 30% brightness</option><option value="1">Balanced - 58% brightness</option>
+<option value="2">Bright - 85% brightness</option></select></div>
+<hr><div class="row"><button class="primary" onclick="saveSettings()">Save settings</button>
+<button class="ghost" onclick="loadSettings()">Refresh</button></div>
+<p class="note" style="margin-top:15px">Settings are applied through the device menu. If you are inside an app, return to the home screen after saving.</p>
+</section>
+<p class="note">Runs directly on your StickS3 over your local Wi-Fi. No cloud connection or download required.</p>
+</main><script>
+const $=id=>document.getElementById(id), say=t=>$('status').textContent=t;
+const code=()=>$('pin').value.trim().toUpperCase();
+const valid=()=>{if(!/^[0-9A-F]{8}$/.test(code())){say('Enter the 8-character code shown on the device.');return false}return true};
+function headers(){return {'X-Johnny-Code':code()}}
 async function go(k){
-const token=document.getElementById('pin').value.trim().toUpperCase();
-const status=document.getElementById('status');
-if(!/^[0-9A-F]{8}$/.test(token)){status.textContent='Enter the 8-character code';return;}
+if(!valid())return;
+try{let r=await fetch('/cmd?k='+encodeURIComponent(k),{method:'POST',headers:headers(),cache:'no-store'});
+say(r.ok?'Sent '+k:r.status===403?'Pairing code incorrect':r.status===429?'Device busy, tap again':'Remote command failed');}
+catch(e){say('Device unreachable. Check Wi-Fi.')}
+}
+async function loadSettings(){
+if(!valid())return;
+try{let r=await fetch('/state',{headers:headers(),cache:'no-store'});
+if(!r.ok)throw Error(r.status===403?'Pairing code incorrect':'Could not load settings');
+let d=await r.json();$('nav').value=String(d.nav);$('theme').value=String(d.theme);$('power').value=String(d.power);
+say('Connected! Settings loaded.');}
+catch(e){say(e.message||'Connection failed')}
+}
+async function saveSettings(){
+if(!valid())return;
 try{
-const res=await fetch('/cmd?k='+encodeURIComponent(k)+'&t='+encodeURIComponent(token),
-{method:'POST',cache:'no-store'});
-status.textContent=res.ok?'Command sent':res.status===403?'Code incorrect':'Remote unavailable';
-}catch(e){status.textContent='Could not reach StickS3';}
+for(const kind of ['nav','theme','power']){
+let v=$(kind).value;
+let r=await fetch('/settings?kind='+kind+'&value='+v,{method:'POST',headers:headers(),cache:'no-store'});
+if(!r.ok)throw Error(r.status===403?'Pairing code incorrect':r.status===429?'Device busy, try again':'Could not apply '+kind);
+}
+say('Settings sent. The device applies them from its menu.');
+}catch(e){say(e.message||'Unable to save settings')}
 }
 </script></body></html>
 )JOHNNY";
