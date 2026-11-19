@@ -14,6 +14,8 @@ AsyncWebServer *remoteServer = nullptr;
 volatile uint8_t queuedKey = 0;
 String accessCode;
 uint32_t lastCommandMs = 0;
+volatile bool settingsPending = false;
+volatile uint8_t pendingNav = 0, pendingTheme = 0, pendingPower = 1;
 
 // An authorization code is shown only on the StickS3 screen. The browser UI
 // does not embed it. Control stays within the phone's current Wi-Fi network.
@@ -133,10 +135,13 @@ void stopRemote() {
     delete remoteServer;
     remoteServer = nullptr;
     queuedKey = 0;
+    settingsPending = false;
 }
 bool isAuthorized(AsyncWebServerRequest *request) {
-    return request->hasParam("t") &&
-           request->getParam("t")->value().equalsIgnoreCase(accessCode);
+    // Never put the pairing secret into the URL. Browsers send it in a
+    // custom header; cross-origin forms cannot silently supply this header.
+    return request->hasHeader("X-Johnny-Code") &&
+           request->getHeader("X-Johnny-Code")->value().equalsIgnoreCase(accessCode);
 }
 bool startRemote() {
     if (remoteServer) return true;
@@ -173,10 +178,60 @@ bool startRemote() {
         lastCommandMs = millis();
         req->send(200, "text/plain", "OK");
     });
+    remoteServer->on("/state", HTTP_GET, [](AsyncWebServerRequest *req) {
+        if (!isAuthorized(req)) { req->send(403, "text/plain", "Unauthorized"); return; }
+        String body = String("{\"nav\":") + (johnnyNavigationSwap() ? "1" : "0") +
+                      ",\"theme\":" + String(johnnyTheme()) +
+                      ",\"power\":" + String(johnnyPowerMode()) + "}";
+        AsyncWebServerResponse *res = req->beginResponse(200, "application/json", body);
+        res->addHeader("Cache-Control", "no-store");
+        req->send(res);
+    });
+    remoteServer->on("/settings", HTTP_POST, [](AsyncWebServerRequest *req) {
+        if (!isAuthorized(req)) { req->send(403, "text/plain", "Unauthorized"); return; }
+        if (!req->hasParam("nav") || !req->hasParam("theme") || !req->hasParam("power")) {
+            req->send(400, "text/plain", "Missing settings"); return;
+        }
+        String nav = req->getParam("nav")->value();
+        String theme = req->getParam("theme")->value();
+        String power = req->getParam("power")->value();
+        if ((nav != "0" && nav != "1") ||
+            (theme != "0" && theme != "1" && theme != "2") ||
+            (power != "0" && power != "1" && power != "2")) {
+            req->send(400, "text/plain", "Invalid settings"); return;
+        }
+        if (settingsPending) { req->send(429, "text/plain", "Busy"); return; }
+        pendingNav = (uint8_t)nav.toInt();
+        pendingTheme = (uint8_t)theme.toInt();
+        pendingPower = (uint8_t)power.toInt();
+        settingsPending = true;
+        req->send(202, "text/plain", "Queued");
+    });
+    remoteServer->on("/ask", HTTP_POST, [](AsyncWebServerRequest *req) {
+        if (!isAuthorized(req)) { req->send(403, "text/plain", "Unauthorized"); return; }
+        if (!req->hasParam("q", true)) { req->send(400, "text/plain", "Missing question"); return; }
+        String q = req->getParam("q", true)->value();
+        if (q.length() > 140) { req->send(413, "text/plain", "Question too long"); return; }
+        // Lightweight, bounded intent responses. No AI key, model, cloud or
+        // unrestricted device control is exposed to the HTTP worker.
+        String answer = johnnyOfflineReply(q);
+        AsyncWebServerResponse *res = req->beginResponse(200, "text/plain; charset=utf-8", answer);
+        res->addHeader("Cache-Control", "no-store");
+        req->send(res);
+    });
     remoteServer->begin();
     return true;
 }
 } // namespace
+
+bool johnnyRemotePopSettings(uint8_t &nav, uint8_t &theme, uint8_t &power) {
+    if (!settingsPending) return false;
+    nav = pendingNav;
+    theme = pendingTheme;
+    power = pendingPower;
+    settingsPending = false;
+    return true;
+}
 
 bool johnnyRemotePop(uint8_t &key) {
     if (queuedKey == 0) return false;
