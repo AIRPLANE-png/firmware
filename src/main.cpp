@@ -538,6 +538,7 @@ void setup() {
 #if defined(JOHNNYOS_STICKS3)
     // Apply saved JohnnyOS LCD power mode after M5 hardware initialization.
     // Radio, IR and other Bruce hardware clocks remain unchanged.
+    johnnyLoadControls(); // NVS once at boot, before button handler is started.
     johnnyApplyPowerMode();
 #endif
     // end of post gpio begin
