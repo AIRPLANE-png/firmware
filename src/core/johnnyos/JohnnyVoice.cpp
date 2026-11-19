@@ -5,6 +5,7 @@
 #include "modules/others/mic.h"
 #include "modules/others/audio.h"
 #include <LittleFS.h>
+#include <stdint.h>
 #include <globals.h>
 
 namespace {
