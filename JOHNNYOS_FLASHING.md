@@ -1,4 +1,4 @@
-# JohnnyOS StickS3 flashing guide (preview v0.2)
+# JohnnyOS StickS3 flashing guide (UI, controls and offline assistant v0.5)
 
 **Target:** M5Stack StickS3, ESP32-S3-PICO-1-N8R8, 8 MB flash / 8 MB PSRAM.
 
@@ -25,8 +25,9 @@ Connect directly with a data-capable USB-C cable. If flashing reports serial cor
 
 The 3 physical button count includes the power/reset button; the Bruce input driver currently uses two menu buttons:
 
-- GPIO 11: single click = **Next**; double click or hold = **Select**
-- GPIO 12: single click = **Previous**; double click or hold = **Back**
+- GPIO 11: single click = **Next** by default; double click or hold = **Select** (always fixed)
+- GPIO 12: single click = **Previous** by default; double click or hold = **Back** (always fixed)
+- Tap directions can be reversed in **Controls**, page 6, or in the paired browser control center.
 - The third hardware power/reset button is **not** configured as an app navigation button.
 
 Games reuse the two navigation buttons, with hold Back to exit. The final physical labeling needs device testing.
@@ -64,15 +65,15 @@ If the screen is black after a verified flash, capture 115200 baud serial boot o
 
 ## JohnnyOS controls and new apps
 
-The current Bruce StickS3 firmware uses two menu buttons (plus separate power/reset).
+The JohnnyOS StickS3 firmware uses two menu buttons (plus separate power/reset).
 
-- GPIO11 / KEY1: tap **Next**, double-click or hold **Select**
-- GPIO12 / KEY2: tap **Previous**, double-click or hold **Back**
-- Open **Controls** from the launcher to review the button guide on the display.
+- GPIO11 / KEY1: tap **Next** (or Previous when swapped), double-click or hold **Select**
+- GPIO12 / KEY2: tap **Previous** (or Next when swapped), double-click or hold **Back**
+- Open **Controls**, page 6, to switch tap directions on-device; the selection and Back holds are never remapped.
 
 ### Phone web remote
 
-Open **Phone Remote** and connect the StickS3 to Wi-Fi. It shows an 8-character access code and IP address ending in `:8181`. On your phone, join the same Wi-Fi network, open `http://<device-IP>:8181`, and type that code. You can then use Prev, Next, Select and Back from the phone. The server is local network only and does not expose unrelated tools through its HTTP API. Open Phone Remote again to choose **Stop phone remote**.
+Open **Phone Remote** and connect the StickS3 to Wi-Fi. It shows an 8-character access code and IP address ending in `:8181`. On your phone, join the same Wi-Fi network, open `http://<device-IP>:8181`, and type that code. You can then use Prev, Next, Select and Back from the phone, choose a theme and power profile, reverse tap directions, and ask the local offline assistant questions. The server uses a code shown on the device, never embedded in the page or sent through the URL. It is **plain HTTP** intended for a trusted local Wi-Fi network; do **not** forward port 8181 or expose it to the internet. It does not expose unrelated Bruce tools through its API. Open Phone Remote again to choose **Stop phone remote**.
 
 ### Bluetooth air mouse and media remote
 
@@ -80,13 +81,27 @@ Open **Air Mouse**; pair your computer or phone with **JohnnyOS Mouse** using Bl
 
 ### Johnny AI voice recording
 
-Open **Johnny AI** and select **Push-to-talk**. Hold KEY1 to speak and release to save a WAV file under `/johnnyos/last-voice.wav` on LittleFS. **Play last voice** uses the StickS3 speaker. This is genuine local recording/playback, **not cloud transcription or AI conversation yet**.
+Open **Johnny AI** and select **Record voice**. Hold KEY1 to speak and release to save a WAV file under `/johnnyos/last-voice.wav` on LittleFS. **Play voice** uses the StickS3 speaker. This is genuine local recording/playback, **not cloud transcription or AI conversation yet**.
+
+### JohnnyOS offline assistant (v0.5 source)
+
+From **Johnny AI → Offline Q&A**, use short taps to browse ten built-in topics and hold KEY1 to display a response. This feature runs **on the StickS3 without Wi-Fi or internet**. Topics include battery, Wi-Fi, controls, files, games, power saving, Bluetooth, the browser remote and recorded voice.
+
+The browser's **Offline assistant** section accepts typed questions over the local Wi-Fi connection and uses the same **on-device keyword/intent engine**. It makes no cloud requests. The browser is optional, and needs local Wi-Fi solely to reach the StickS3.
+
+**Important:** This is an offline, deterministic question-answering assistant, **not an offline large language model**, free-form on-device speech recognition, or AI-generated speech. Unknown questions receive a fallback message. The on-device version offers ten selectable prompts because the StickS3 has no text keyboard. The web companion permits text input.
+
+### Visual and controls refresh (v0.5 source)
+
+The home screen paints 30×30 app icons centered inside three-column rounded cards; selection changes repaint only affected cards. The two-button driver responds to click events without the old 200 ms polling gate. The browser controller can reverse short-tap direction (Next/Previous), change the theme and select Eco/Balanced/Bright; settings are validated and applied from the menu task, then saved in NVS. Long/double-tap actions retain Select and Back for safe recovery.
+
+GitHub Actions is configured for **manual workflow_dispatch** builds only to avoid the previous flood of cancelled build jobs. The latest successful build must match the commit that contains these source changes. Do not flash an older v0.4 artifact expecting v0.5 features.
 
 ## Status
 
 This is a **development preview**, not a production-tested v1.0 release.
 Bluetooth HID mouse, phone remote, push-to-talk and games now have native source code, but require a successful complete build **and testing on the actual StickS3** before claiming they work.
-**Online conversational AI, reliable offline speech recognition, AI-generated replies and voice responses** still require extra implementation and, for online AI, an external AI service.
+**Online conversational AI, offline large-language-model chat, reliable offline speech recognition, AI-generated replies and voice responses** still require extra implementation and, for online AI, an external AI service.
 Do not mistake the assistant orb for a working cloud AI service.
 
 Settings (themes, personality and game high scores) use NVS Preferences; they survive ordinary power loss and restart, but **an erase-all flash will wipe them**. Bruce's own settings remain managed by Bruce.
