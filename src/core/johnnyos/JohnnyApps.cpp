@@ -435,20 +435,20 @@ void showGames() {
     loopOptions(options, MENU_TYPE_SUBMENU, "Johnny Games");
 }
 void showControls() {
-    // All help pages use the same two physical buttons. Double/hold Key 1
-    // always selects; double/hold Key 2 always backs out, even if taps swap.
+    // Rapid taps move immediately (even two quick taps). Hold Key 1 selects;
+    // hold Key 2 backs out; these safety actions never swap.
     const char *headings[] = {"HOME CONTROLS", "SELECT / BACK", "GAME CONTROLS",
                               "AIR MOUSE", "PHONE REMOTE", "KEY DIRECTION"};
-    const char *lineA[] = {"Key 1: tap to move", "Key 1: Hold / double",
+    const char *lineA[] = {"Key 1: tap to move", "Key 1: Hold to Select",
                            "Snake: Prev = left", "Tilt to move cursor",
                            "Join the same Wi-Fi", "Select to flip directions"};
     const char *lineB[] = {"Key 2: tap to move", "Select current app",
                            "Next = right", "Key 1: Left click",
                            "Open shown web address", "Your choice is saved"};
-    const char *lineC[] = {"Power button: On/off", "Key 2: Hold / double",
+    const char *lineC[] = {"Power button: On/off", "Key 2: Hold to Back",
                            "Hold Back to exit", "Key 2: Right click",
-                           "Enter 8-digit pairing code", "Hold buttons never change"};
-    const char *lineD[] = {"Hold Key 1 to open", "Go back from any screen",
+                           "Enter 8-digit pairing code", "Holds stay fixed"};
+    const char *lineD[] = {"Double tap: move twice", "Go back from any screen",
                            "Pong: move paddle", "Hold Key 2 to exit",
                            "Change settings in browser", "Long Key 2: always Back"};
     int page = 0;
