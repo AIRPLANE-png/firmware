@@ -1,8 +1,11 @@
 name: JohnnyOS StickS3 Cloud Build
-# Manual builds only: prevents dozens of paid or cancelled compilations
-# while firmware source files are edited.
+# Explicit builds only. Ordinary code commits do not automatically
+# start a firmware job. Update .johnnyos-build-request for a one-shot build.
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.johnnyos-build-request'
 
 # Keep only the newest requested firmware build to avoid resource contention.
 concurrency:
