@@ -646,10 +646,12 @@ int loopOptions(
         if (exit) break;
         if (menuType == MENU_TYPE_MAIN) {
             checkReboot();
+#if !defined(JOHNNYOS_STICKS3)
             if (devModeCounter >= 5 && !bruceConfig.devMode) {
                 bruceConfig.setDevMode(true);
                 displayInfo("Dev Mode Enabled", true);
             }
+#endif
             if (millis() - _clock_bat_timer > 30000) {
                 _clock_bat_timer = millis();
 #if !defined(JOHNNYOS_STICKS3)
@@ -935,12 +937,20 @@ int loopOptions(
             if (check(NextPress) || check(DownPress)) {
                 int nextEnabled = findNextEnabled(index, +1);
                 if (nextEnabled >= 0) {
+#if !defined(JOHNNYOS_STICKS3)
                     if (!bruceConfig.devMode && nextEnabled <= index) devModeCounter++;
+#endif
                     index = nextEnabled;
                 }
                 redraw = true;
             }
+#if defined(JOHNNYOS_STICKS3)
+            // No 10ms dead time after each tap: the input sampler already
+            // debounces, and the main loop yields once after processing.
+            vTaskDelay(pdMS_TO_TICKS(1));
+#else
             vTaskDelay(10 / portTICK_PERIOD_MS);
+#endif
         }
 
         /* Select and run function
