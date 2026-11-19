@@ -402,32 +402,52 @@ void showGames() {
     loopOptions(options, MENU_TYPE_SUBMENU, "Johnny Games");
 }
 void showControls() {
-    // This help screen is available at any time from the home-screen launcher.
-    // It describes the ACTUAL Bruce StickS3 two-navigation-button mapping.
-    const char *headings[] = {"HOME CONTROLS", "SELECT / BACK", "GAME CONTROLS", "AIR MOUSE", "PHONE REMOTE"};
-    const char *lineA[] = {"KEY 2: Previous", "KEY 1: Hold / double", "Snake: Prev = left", "Tilt: move cursor", "Use Wi-Fi with phone"};
-    const char *lineB[] = {"KEY 1: Next", "Select current app", "Next = right", "KEY 1: Left click", "Enter shown address"};
-    const char *lineC[] = {"POWER: Reset / Off", "KEY 2: Hold / double", "Hold PREV to exit", "KEY 2: Right click", "Enter code on phone"};
-    const char *lineD[] = {"", "Go back", "Pong: move paddle", "Hold PREV to exit", "Use Prev/Next/Select"};
+    // All help pages use the same two physical buttons. Double/hold Key 1
+    // always selects; double/hold Key 2 always backs out, even if taps swap.
+    const char *headings[] = {"HOME CONTROLS", "SELECT / BACK", "GAME CONTROLS",
+                              "AIR MOUSE", "PHONE REMOTE", "KEY DIRECTION"};
+    const char *lineA[] = {"Key 1: tap to move", "Key 1: Hold / double",
+                           "Snake: Prev = left", "Tilt to move cursor",
+                           "Join the same Wi-Fi", "Select to flip directions"};
+    const char *lineB[] = {"Key 2: tap to move", "Select current app",
+                           "Next = right", "Key 1: Left click",
+                           "Open shown web address", "Your choice is saved"};
+    const char *lineC[] = {"Power button: On/off", "Key 2: Hold / double",
+                           "Hold Back to exit", "Key 2: Right click",
+                           "Enter 8-digit pairing code", "Hold buttons never change"};
+    const char *lineD[] = {"Hold Key 1 to open", "Go back from any screen",
+                           "Pong: move paddle", "Hold Key 2 to exit",
+                           "Change settings in browser", "Long Key 2: always Back"};
     int page = 0;
     bool redraw = true;
     clearInputs();
     while (true) {
         if (check(EscPress)) break;
-        if (check(NextPress)) { page = (page + 1) % 5; redraw = true; }
-        if (check(PrevPress)) { page = (page + 4) % 5; redraw = true; }
+        if (check(NextPress)) { page = (page + 1) % 6; redraw = true; }
+        if (check(PrevPress)) { page = (page + 5) % 6; redraw = true; }
+        if (page == 5 && check(SelPress)) {
+            johnnySetNavigationSwap(!johnnyNavigationSwap());
+            redraw = true;
+        }
         if (redraw) {
             redraw = false;
-            titleBar("Controls", String(page + 1) + " / 5");
+            titleBar("Controls", String(page + 1) + " / 6");
             tft.fillRoundRect(9, 31, 222, 83, 12, panelColor());
             tft.setTextColor(TEXT);
             tft.drawCentreString(headings[page], tftWidth / 2, 38, 2);
             tft.setTextColor(dimColor());
             tft.drawCentreString(lineA[page], tftWidth / 2, 63, 1);
             tft.drawCentreString(lineB[page], tftWidth / 2, 76, 1);
-            tft.drawCentreString(lineC[page], tftWidth / 2, 89, 1);
+            if (page == 5) {
+                tft.setTextColor(tint());
+                tft.drawCentreString(johnnyNavigationSwap()
+                    ? "KEY 1: Prev   KEY 2: Next" : "KEY 1: Next   KEY 2: Prev",
+                    tftWidth / 2, 89, 1);
+            } else tft.drawCentreString(lineC[page], tftWidth / 2, 89, 1);
+            tft.setTextColor(dimColor());
             tft.drawCentreString(lineD[page], tftWidth / 2, 101, 1);
-            footer("Prev / Next: pages  |  Hold Prev: exit");
+            footer(page == 5 ? "SELECT: toggle  HOLD KEY 2: back"
+                             : "Prev / Next: pages  Hold Key 2: back");
         }
         delay(25);
     }
