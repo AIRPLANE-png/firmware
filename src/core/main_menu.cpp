@@ -160,6 +160,7 @@ void MainMenu::begin(void) {
         _johnnyLastCount = -1;
         _johnnyLastTheme = 255;
         _johnnyLastSwap = false;
+        _johnnyLastWallpaper = 255;
 #endif
         mainMenuGridColumns = _grid.cols;
     } else {
@@ -198,14 +199,27 @@ void MainMenu::drawJohnnyLauncher(int index) {
     const uint8_t theme = johnnyTheme();
     const bool full = _johnnyLastIndex < 0 || _johnnyLastPage != page ||
                       _johnnyLastCount != count || _johnnyLastTheme != theme ||
-                      _johnnyLastSwap != johnnyNavigationSwap();
+                      _johnnyLastSwap != johnnyNavigationSwap() ||
+                      _johnnyLastWallpaper != johnnyWallpaperStyle();
     if (full) {
         johnnyDrawWallpaper();
     tft.setTextSize(1);
     tft.setTextColor(white);
-    tft.drawString("Johnny", 9, 5, 2);
-    tft.setTextColor(tft.color565(124, 181, 255));
-    tft.drawString("OS", 61, 5, 2);
+    if (portrait) {
+        tft.drawString("J", 9, 5, 2);
+        tft.setTextColor(tft.color565(124,181,255));
+        tft.drawString("OS", 22, 5, 2);
+        tft.setTextColor(muted);
+        tft.drawString(WiFi.isConnected() ? "W" : "-", 63, 9, 1);
+        tft.drawString(johnnySoundEnabled() ? "S" : "x", 78, 9, 1);
+    } else {
+        tft.drawString("Johnny", 9, 5, 2);
+        tft.setTextColor(tft.color565(124,181,255));
+        tft.drawString("OS", 61, 5, 2);
+        tft.setTextColor(muted);
+        tft.drawString(WiFi.isConnected() ? "Wi-Fi" : "Offline", 114, 9, 1);
+        tft.drawString(johnnySoundEnabled() ? "Sound" : "Muted", 155, 9, 1);
+    }
     tft.setTextColor(muted);
     tft.drawRightString(String(getBattery()) + "%", tftWidth - 8, 7, 1);
     tft.drawFastHLine(9, 23, tftWidth - 18, tft.color565(64, 79, 129));
@@ -360,6 +374,7 @@ void MainMenu::drawJohnnyLauncher(int index) {
     _johnnyLastCount = count;
     _johnnyLastTheme = theme;
     _johnnyLastSwap = johnnyNavigationSwap();
+    _johnnyLastWallpaper = johnnyWallpaperStyle();
 }
 
 #endif
