@@ -1,4 +1,4 @@
-# JohnnyOS StickS3 flashing guide (UI, controls and offline assistant v0.5)
+# JohnnyOS StickS3 flashing guide (Visual Edition v0.6)
 
 **Target:** M5Stack StickS3, ESP32-S3-PICO-1-N8R8, 8 MB flash / 8 MB PSRAM.
 
@@ -96,6 +96,40 @@ The browser's **Offline assistant** section accepts typed questions over the loc
 The home screen paints 30×30 app icons centered inside three-column rounded cards; selection changes repaint only affected cards. The two-button driver responds to click events without the old 200 ms polling gate. The browser controller can reverse short-tap direction (Next/Previous), change the theme and select Eco/Balanced/Bright; settings are validated and applied from the menu task, then saved in NVS. Long/double-tap actions retain Select and Back for safe recovery.
 
 GitHub Actions is configured for **manual workflow_dispatch** builds only to avoid the previous flood of cancelled build jobs. The latest successful build must match the commit that contains these source changes. Do not flash an older v0.4 artifact expecting v0.5 features.
+
+## Visual Edition v0.6 (new source, hardware testing pending)
+
+The launcher supports **Landscape (240x135)** and **Portrait (135x240)**. Go to **Settings -> Orientation** and select the other mode. **Only the home launcher rotates**; all Bruce and JohnnyOS apps open in landscape because their controls/layouts were designed for 240x135. The browser control center also has an Orientation selector. Back and Select are never remapped.
+
+The launcher uses opaque rounded icon tiles with selective redraw, pinned favorite text in its bottom dock, a battery/Wi-Fi/sound header, and three color themes with three wallpaper styles: Gradient, Midnight and Aurora. The dock is a **favorite indicator**, not a third hardware navigation button; pinning moves your favorite to the first home tile for quick access.
+
+**Home Layout** lets you pin a favorite and move apps earlier/later. These preferences are stored locally. The menu preserves all original Bruce tools, including the original Files app.
+
+New native apps:
+
+- **Calculator:** 4-column keypad, basic arithmetic, decimals, delete, sign and clear. Tap to choose a key, hold Key 1 to press.
+- **Files +:** safer read-only LittleFS root explorer and text preview. It does not edit/delete files or replace the original Bruce SD file manager.
+- **Performance:** battery, free heap, free PSRAM and Wi-Fi connection, updated approximately once per second.
+- **2048 Puzzle:** select direction with taps, hold Key 1 to slide.
+- **Memory Duel:** repeat the displayed two-button color sequence.
+
+**Audio is OFF by default.** Change it in **Johnny AI -> Audio** or **Settings -> Audio / volume**. Disabling audio blocks JohnnyOS voice recording playback and the legacy Bruce boot jingle; voice recording remains available. Other legacy tools may have their own separate audio settings.
+
+**Experimental offline voice activity:** Johnny AI -> Voice activity records a WAV through the existing mic support and checks its audio amplitude. It can report noisy/quiet audio. This **does not recognize words, perform speech transcription, run a local language model or provide spoken AI answers**. The existing Offline Q&A remains a deterministic device-help assistant; more topics cover Calculator, 2048, Portrait, audio, favorites and performance.
+
+**Phone Control Center:** open Phone Remote, view the IP/code, then visit the displayed device URL while your phone and StickS3 share a trusted Wi-Fi network. The web interface now includes gamepad buttons, live cached battery/free-heap/Wi-Fi telemetry, theme/wallpaper/orientation/power/sound controls, and the offline question box. The page has home-screen app metadata and a local manifest, but because a local IP normally serves HTTP without HTTPS, **full PWA installation/service-worker caching may not work** in some browsers. Use your browser's **Add to Home Screen** for a shortcut. **Do not expose port 8181 to the internet**; the local pairing code is not end-to-end encrypted over HTTP.
+
+### Reliability and compatibility checklist
+
+1. Confirm a green successful GitHub Actions build for the **v0.6 commit**, and use its matching **JohnnyOS-StickS3-Visual-v0.6** artifact, not old v0.5.
+2. Flash the merged image at **0x0000**; verify the screen and both buttons with hardware.
+3. Toggle portrait in Settings and confirm the launcher rotates, while existing tools return to landscape.
+4. Move Home Layout icons and pin a favorite, then restart and verify persistence.
+5. Confirm that sounds remain muted by default and can be enabled through Settings or Johnny AI.
+6. Test the Calculator operations, 2048 moves, Memory Duel, Files + preview, and performance readings.
+7. Pair the local browser, navigate the home menu, use the gamepad in a game and save preferences.
+8. Record voice activity through the mic, and **do not** interpret activity detection as speech recognition.
+9. Measure battery and responsiveness on physical hardware; code-level optimization does not prove a particular speed or battery improvement.
 
 ## Status
 
