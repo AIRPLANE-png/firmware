@@ -230,12 +230,13 @@ void johnnyHomeLayout() {
                 }
             }
         }
+        bool mustDraw = full;
         if(full){
             full=false;
             frame("Home Layout",action==BROWSE?"Tap: app  Hold 1: edit  Hold 2: exit":"Tap: action  Hold 1: do  Hold 2: back");
             if(action==BROWSE)for(int j=0;j<4;++j)row(j);
         }
-        if(action==EDIT && (full || command!=lastCommand)){
+        if(action==EDIT && (mustDraw || command!=lastCommand)){
             const char* actions[]={"Pin as favorite","Move earlier","Move later","Done"};
             tft.fillRoundRect(8,29,224,82,9,rgb(23,39,74));
             tft.setTextColor(W);
