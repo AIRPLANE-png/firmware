@@ -58,6 +58,12 @@ void johnnyPushToTalk() {
 
 void johnnyPlayLastVoice() {
 #if defined(HAS_SPEAKER)
+    // JohnnyOS ships muted. Recording remains available without sound.
+    if (!johnnySoundEnabled()) {
+        voiceCard("Speaker muted", "Enable audio in AI / Settings");
+        delay(1000);
+        return;
+    }
     if (!LittleFS.exists(voicePath)) {
         voiceCard("Nothing recorded", "Record first");
         delay(1100);
