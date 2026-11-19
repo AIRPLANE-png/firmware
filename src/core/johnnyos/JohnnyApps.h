@@ -19,6 +19,11 @@ private:
 
 uint8_t johnnyTheme();
 void johnnyCycleTheme();
+// Stored power profiles: Eco, Balanced (default), Bright.
+// Applies existing Bruce brightness/dimmer mechanisms without altering radios.
+uint8_t johnnyPowerMode();
+void johnnyApplyPowerMode();
+void johnnyCyclePowerMode();
 uint16_t johnnyRGB(uint8_t r, uint8_t g, uint8_t b);
 void johnnyDrawWallpaper();
 void johnnyDrawBoot();
