@@ -54,6 +54,26 @@ String johnnyOfflineReply(const String &question) {
     if (has("phone") || has("browser") || has("remote") || has("pair")) {
         return "Open Phone Remote, join the same local Wi-Fi, and enter the shown 8-character code in your browser. The Control Center lets you navigate and change settings.";
     }
+    if (has("calculator") || has("math")) {
+        return "Calculator has a four-column number pad. Tap to choose a key and hold Key 1 to press. It supports plus, minus, multiply, divide and decimals.";
+    }
+    if (has("2048") || has("memory duel") || has("puzzle")) {
+        return "The Games menu now includes 2048 and Memory Duel. In 2048, tap to choose a direction and hold Key 1 to slide; Memory Duel tests your ability to repeat a colored pattern.";
+    }
+    if (has("portrait") || has("landscape") || has("rotate") || has("orientation")) {
+        return "In JohnnyOS Settings, choose Orientation to switch between portrait and landscape home screens. All native and Bruce apps use landscape to preserve screen layout.";
+    }
+    if (has("mute") || has("volume") || has("sound") || has("speaker") || has("audio")) {
+        return johnnySoundEnabled() ?
+            "Johnny AI voice playback is ON. Open Settings or the Johnny AI Audio item to mute it. Audio defaults to OFF on a fresh setup." :
+            "Johnny AI voice playback is OFF. Open Settings or the Johnny AI Audio item to enable it. Audio defaults to OFF.";
+    }
+    if (has("favorite") || has("reorder") || has("dock") || has("home layout")) {
+        return "Open Home Layout to choose your favorite app and move icons earlier or later. Your pinned favorite is shown in the launcher dock and is placed first for quick two-button access.";
+    }
+    if (has("performance") || has("ram") || has("memory")) {
+        return "Open Performance for free heap, PSRAM, battery and Wi-Fi status. The screen updates once per second while you view it.";
+    }
     if (has("voice") || has("talk") || has("mic") || has("speech")) {
         return "Push-to-talk records audio on the device. Offline speech transcription and spoken AI replies are not available. Use the built-in topics or browser text box.";
     }
@@ -80,6 +100,7 @@ void johnnyOfflineChat() {
     bool redraw = true;
     check(NextPress); check(PrevPress); check(SelPress); check(EscPress);
     while (true) {
+        johnnyPumpRemoteButtons();
         if (check(EscPress)) break;
         if (check(NextPress)) {
             if (showAnswer) answerPage++;
