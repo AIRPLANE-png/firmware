@@ -327,6 +327,15 @@ bool johnnyRemotePop(uint8_t &key) {
     return true;
 }
 
+void johnnyPumpRemoteButtons() {
+    uint8_t key=0;
+    if (!johnnyRemotePop(key)) return;
+    if (key==1) PrevPress=true;
+    else if (key==2) NextPress=true;
+    else if (key==3) SelPress=true;
+    else if (key==4) EscPress=true;
+}
+
 void johnnyPhoneRemote() {
     if (remoteServer) {
         options = {
@@ -345,6 +354,7 @@ void johnnyPhoneRemote() {
         return;
     }
     String ip = WiFi.isConnected() ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
+    johnnyRemoteUpdateBattery(getBattery()); // refreshed only from UI task
     waitForBack("Phone Remote", accessCode, ip + ":8181");
 }
 #endif
