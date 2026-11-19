@@ -221,6 +221,12 @@ void playGame(int game) {
     uint32_t started = millis(), lastFrame = 0, waitUntil = millis() + random(1800, 3600);
     bool reacted = false;
     clearInputs();
+    titleBar(names[game], "0 pts");
+    footer(game == 0 ? "Short: turn  Hold BACK: exit" :
+           game == 1 ? "Short: paddle up/down" :
+           game == 2 ? "Press either navigation button" :
+           game == 3 ? "Short: switch lanes" : "Next: flap  Hold BACK: exit");
+    int lastScore = -1;
     while (lives > 0) {
         bool left = check(PrevPress), right = check(NextPress), select = check(SelPress);
         if (check(EscPress)) break;
@@ -283,7 +289,15 @@ void playGame(int game) {
                 (obstacleX > 40 && obstacleX < 57 && (birdY < gapY - 21 || birdY > gapY + 21)))
                 lives = 0;
         }
-        titleBar(names[game], String(score) + " pts");
+        // Never repaint the wallpaper or title at the game frame rate.
+        // Only the gameplay region is refreshed, and the score on changes.
+        tft.fillRect(11, 27, 218, 92, color(12, 23, 49));
+        if (score != lastScore) {
+            tft.fillRoundRect(tftWidth - 65, 4, 57, 17, 6, color(22, 29, 54));
+            tft.setTextColor(dimColor());
+            tft.drawRightString(String(score) + " pts", tftWidth - 12, 8, 1);
+            lastScore = score;
+        }
         if (game == 0) {
             tft.fillRoundRect(13, 29, 185, 91, 5, color(18, 33, 57));
             tft.fillCircle(19 + foodX * 7, 34 + foodY * 8, 3, color(255, 101, 146));
@@ -316,10 +330,6 @@ void playGame(int game) {
             tft.fillRect(obstacleX, 26, 19, max(0, gapY - 47), color(67, 214, 154));
             tft.fillRect(obstacleX, gapY + 21, 19, max(0, 115 - gapY - 21), color(67, 214, 154));
         }
-        footer(game == 0 ? "Short: turn  Hold BACK: exit" :
-               game == 1 ? "Short: paddle up/down" :
-               game == 2 ? "Press either navigation button" :
-               game == 3 ? "Short: switch lanes" : "Next: flap  Hold BACK: exit");
         delay(1);
     }
     if (game == 2) {
