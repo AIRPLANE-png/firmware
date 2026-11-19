@@ -57,9 +57,10 @@ void _setup_gpio() {
     Wire1.begin(47, 48);
     setSysI2CBus(&Wire1);
 
-    // SEL_BTN -> Next (click) / Sel (double click or hold)
-    // DW_BTN  -> Prev (click) / Esc (double click or hold)
-    hal_buttons_init_2(DeviceButtons{SEL_BTN, DW_BTN}, 600);
+    // Rapid tap: every short press is immediately Next/Previous.
+    // Hold Key1 420ms = Select, hold Key2 420ms = Back.
+    // Double taps move two steps instead of waiting for a click window.
+    hal_buttons_init_2(DeviceButtons{SEL_BTN, DW_BTN}, 420);
 
     M5.Power.setExtOutput(false); // It buzzes it ext power is turned on
 
