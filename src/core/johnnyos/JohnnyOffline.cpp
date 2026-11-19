@@ -76,13 +76,22 @@ void johnnyOfflineChat() {
     constexpr int count = sizeof(topics) / sizeof(topics[0]);
     int index = 0;
     bool showAnswer = false;
+    int answerPage = 0;
     bool redraw = true;
     check(NextPress); check(PrevPress); check(SelPress); check(EscPress);
     while (true) {
         if (check(EscPress)) break;
-        if (check(NextPress)) { index = (index + 1) % count; showAnswer = false; redraw = true; }
-        if (check(PrevPress)) { index = (index + count - 1) % count; showAnswer = false; redraw = true; }
-        if (check(SelPress)) { showAnswer = !showAnswer; redraw = true; }
+        if (check(NextPress)) {
+            if (showAnswer) answerPage++;
+            else index = (index + 1) % count;
+            redraw = true;
+        }
+        if (check(PrevPress)) {
+            if (showAnswer) answerPage = max(0, answerPage - 1);
+            else index = (index + count - 1) % count;
+            redraw = true;
+        }
+        if (check(SelPress)) { showAnswer = !showAnswer; answerPage = 0; redraw = true; }
         if (redraw) {
             redraw = false;
             johnnyDrawWallpaper();
@@ -104,24 +113,30 @@ void johnnyOfflineChat() {
                 tft.drawString("Tap keys to browse topics", 17, 86, 1);
             } else {
                 String answer = johnnyOfflineReply(String(topics[index]));
+                const int pages = max(1, ((int)answer.length() + 149) / 150);
+                if (answerPage >= pages) answerPage = pages - 1;
                 tft.setTextColor(soft);
-                // Small, bounded word wrapping; no heap-intensive canvas.
+                // Five compact lines per page to avoid truncating long replies.
+                String segment = answer.substring(answerPage * 150,
+                                                 min((answerPage + 1) * 150, (int)answer.length()));
                 int start = 0, y = 65;
-                while (start < (int)answer.length() && y <= 105) {
-                    int stop = min(start + 34, (int)answer.length());
-                    if (stop < (int)answer.length()) {
-                        int space = answer.lastIndexOf(' ', stop);
+                while (start < (int)segment.length() && y <= 105) {
+                    int stop = min(start + 34, (int)segment.length());
+                    if (stop < (int)segment.length()) {
+                        int space = segment.lastIndexOf(' ', stop);
                         if (space > start + 8) stop = space;
                     }
-                    tft.drawString(answer.substring(start, stop), 17, y, 1);
+                    tft.drawString(segment.substring(start, stop), 17, y, 1);
                     start = stop;
-                    while (start < (int)answer.length() && answer[start] == ' ') start++;
+                    while (start < (int)segment.length() && segment[start] == ' ') start++;
                     y += 10;
                 }
             }
             tft.fillRoundRect(7, 120, tftWidth - 14, 13, 5, tft.color565(17, 28, 57));
             tft.setTextColor(soft);
-            tft.drawCentreString("Tap: topic  Hold 1: answer  Hold 2: back",
+            tft.drawCentreString(showAnswer
+                ? "Tap: scroll  Hold 1: topics  Hold 2: back"
+                : "Tap: topic  Hold 1: answer  Hold 2: back",
                                  tftWidth / 2, 123, 1);
         }
         delay(25);
