@@ -789,13 +789,17 @@ int loopOptions(
         }
         uint8_t newNav=0,newTheme=0,newPower=1,newSound=0,newPortrait=0,newWallpaper=0;
         if (johnnyRemotePopSettings(newNav,newTheme,newPower,newSound,newPortrait,newWallpaper)) {
+            const bool rotationChanged = johnnyPortrait() != (newPortrait != 0);
             johnnySetNavigationSwap(newNav != 0);
             johnnySetTheme(newTheme);
             johnnySetPowerMode(newPower);
             johnnySetSoundEnabled(newSound != 0);
             johnnySetPortrait(newPortrait != 0);
             johnnySetWallpaperStyle(newWallpaper);
-            firstRender = true; // apply portrait on next launcher entry
+            // Re-enter the home loop so its portrait-specific geometry and
+            // screen rotation are established together, without a half-frame.
+            if (menuType == MENU_TYPE_MAIN && rotationChanged) break;
+            firstRender = true;
             redraw = true;
         }
         // Phone remote commands are consumed by the menu task, not the HTTP
