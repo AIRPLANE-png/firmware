@@ -535,6 +535,11 @@ void setup() {
     // Some board interfaces initialize or reset the backlight in post-setup,
     // so re-apply the stored brightness after that stage completes.
     setBrightness(bruceConfig.bright, false);
+#if defined(JOHNNYOS_STICKS3)
+    // Apply saved JohnnyOS LCD power mode after M5 hardware initialization.
+    // Radio, IR and other Bruce hardware clocks remain unchanged.
+    johnnyApplyPowerMode();
+#endif
     // end of post gpio begin
 
     inputLockInit();
