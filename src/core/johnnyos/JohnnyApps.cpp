@@ -82,6 +82,7 @@ void showAI() {
     };
     clearInputs();
     while (true) {
+        johnnyPumpRemoteButtons();
         if (check(EscPress)) break;
         if (check(PrevPress)) selected = (selected + 5) % 6;
         if (check(NextPress)) selected = (selected + 1) % 6;
@@ -167,6 +168,7 @@ void showSettings() {
         tft.drawRightString(val, 221, y + 3, 1);
     };
     while (true) {
+        johnnyPumpRemoteButtons();
         if (check(EscPress)) break;
         if (check(NextPress)) focus = (focus + 1) % 6;
         if (check(PrevPress)) focus = (focus + 5) % 6;
@@ -287,6 +289,7 @@ void playGame(int game) {
            game == 3 ? "Short: switch lanes" : "Next: flap  Hold BACK: exit");
     int lastScore = -1;
     while (lives > 0) {
+        johnnyPumpRemoteButtons();
         bool left = check(PrevPress), right = check(NextPress), select = check(SelPress);
         if (check(EscPress)) break;
         if (game == 0) { // Snake: turn left or right, then automatically advance.
@@ -452,6 +455,7 @@ void showControls() {
     bool redraw = true;
     clearInputs();
     while (true) {
+        johnnyPumpRemoteButtons();
         if (check(EscPress)) break;
         if (check(NextPress)) { page = (page + 1) % 6; redraw = true; }
         if (check(PrevPress)) { page = (page + 5) % 6; redraw = true; }
