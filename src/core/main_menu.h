@@ -107,6 +107,7 @@ private:
     int _johnnyLastPage = -1;
     int _johnnyLastCount = -1;
     uint8_t _johnnyLastTheme = 255;
+    bool _johnnyLastSwap = false;
 #endif
 };
 extern MainMenu mainMenu;
