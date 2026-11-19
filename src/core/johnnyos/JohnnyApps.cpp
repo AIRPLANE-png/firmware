@@ -63,7 +63,7 @@ void showAI() {
     int selected = 0;
     int previousSelection = -1;
     bool full = true;
-    const char *choices[] = {"Offline Q&A", "Record voice", "Play voice", "Online AI status", "Personality", "Audio: OFF"};
+    const char *choices[] = {"Offline Q&A", "Record voice", "Play voice", "Voice activity", "Personality", "Audio: OFF"};
     const char *personas[] = {"Friendly", "Tech", "Concise"};
     Preferences prefs;
     prefs.begin("johnnyos", true);
@@ -90,7 +90,7 @@ void showAI() {
             if (selected == 0) { johnnyOfflineChat(); full = true; }
             else if (selected == 1) { johnnyPushToTalk(); full = true; }
             else if (selected == 2) { johnnyPlayLastVoice(); full = true; }
-            else if (selected == 3) { note("Online AI needs a secure service"); full = true; }
+            else if (selected == 3) { johnnyVoiceExperiment(); full = true; }
             else if (selected == 5) { johnnySetSoundEnabled(!johnnySoundEnabled()); full = true; }
             else {
                 persona = (persona + 1) % 3;
