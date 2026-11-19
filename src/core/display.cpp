@@ -778,6 +778,16 @@ int loopOptions(
             displayScrollingText(txt, coord, true);
         }
 #if defined(JOHNNYOS_STICKS3)
+        // Apply browser preferences only from the UI task, never inside the
+        // asynchronous HTTP callback (NVS and LCD writes stay single-threaded).
+        uint8_t newNav = 0, newTheme = 0, newPower = 1;
+        if (johnnyRemotePopSettings(newNav, newTheme, newPower)) {
+            johnnySetNavigationSwap(newNav != 0);
+            johnnySetTheme(newTheme);
+            johnnySetPowerMode(newPower);
+            firstRender = true; // refresh the current theme safely
+            redraw = true;
+        }
         // Phone remote commands are consumed by the menu task, not the HTTP
         // callback. Never let remote requests invoke arbitrary Bruce actions.
         uint8_t remoteKey = 0;
