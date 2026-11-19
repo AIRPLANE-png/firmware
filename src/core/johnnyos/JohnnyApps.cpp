@@ -11,6 +11,9 @@
 #include <WiFi.h>
 #include <globals.h>
 
+// Small cached runtime value read by the GPIO event callbacks (never NVS from an ISR).
+volatile bool johnnySwapNavigation = false;
+
 namespace {
 constexpr uint16_t NAVY = 0x080B;
 constexpr uint16_t TEXT = 0xFFFF;
@@ -434,6 +437,23 @@ void showControls() {
 } // namespace
 
 uint16_t johnnyRGB(uint8_t r, uint8_t g, uint8_t b) { return color(r, g, b); }
+void johnnyLoadControls() {
+    Preferences prefs;
+    if (prefs.begin("johnnyos", true)) {
+        johnnySwapNavigation = prefs.getBool("swapnav", false);
+        prefs.end();
+    } else johnnySwapNavigation = false;
+}
+bool johnnyNavigationSwap() { return johnnySwapNavigation; }
+void johnnySetNavigationSwap(bool reversed) {
+    johnnySwapNavigation = reversed;
+    Preferences prefs;
+    if (prefs.begin("johnnyos", false)) {
+        prefs.putBool("swapnav", reversed);
+        prefs.end();
+    }
+}
+
 uint8_t johnnyTheme() {
     if (cachedTheme > 2) {
         Preferences prefs;
@@ -443,13 +463,16 @@ uint8_t johnnyTheme() {
     }
     return cachedTheme;
 }
-void johnnyCycleTheme() {
-    cachedTheme = (johnnyTheme() + 1) % 3;
+void johnnySetTheme(uint8_t theme) {
+    if (theme > 2) return;
+    cachedTheme = theme;
     Preferences prefs;
-    prefs.begin("johnnyos", false);
-    prefs.putUChar("theme", cachedTheme);
-    prefs.end();
+    if (prefs.begin("johnnyos", false)) {
+        prefs.putUChar("theme", cachedTheme);
+        prefs.end();
+    }
 }
+void johnnyCycleTheme() { johnnySetTheme((johnnyTheme() + 1) % 3); }
 uint8_t johnnyPowerMode() {
     if (cachedPowerMode > 2) {
         Preferences prefs;
@@ -473,15 +496,17 @@ void johnnyApplyPowerMode() {
     previousMillis = millis();
     if (!isSleeping && !isScreenOff) setBrightness(bruceConfig.bright, false);
 }
-void johnnyCyclePowerMode() {
-    cachedPowerMode = (johnnyPowerMode() + 1) % 3;
+void johnnySetPowerMode(uint8_t mode) {
+    if (mode > 2) return;
+    cachedPowerMode = mode;
     Preferences prefs;
     if (prefs.begin("johnnyos", false)) {
         prefs.putUChar("power", cachedPowerMode);
         prefs.end();
     }
-    johnnyApplyPowerMode(); // apply only after an explicit user selection
+    johnnyApplyPowerMode();
 }
+void johnnyCyclePowerMode() { johnnySetPowerMode((johnnyPowerMode() + 1) % 3); }
 void johnnyDrawWallpaper() {
     const uint8_t theme = johnnyTheme();
     for (int y = 0; y < tftHeight; y += 3) {
