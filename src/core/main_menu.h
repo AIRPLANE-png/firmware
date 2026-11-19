@@ -35,6 +35,10 @@ public:
     JohnnyMenuItem johnnyMouse{"Air Mouse", JohnnyMenuItem::MOUSE};
     JohnnyMenuItem johnnyMedia{"Media", JohnnyMenuItem::MEDIA};
     JohnnyMenuItem johnnyHelp{"Controls", JohnnyMenuItem::HELP};
+    JohnnyMenuItem johnnyCalc{"Calculator", JohnnyMenuItem::CALCULATOR};
+    JohnnyMenuItem johnnyFilesPlus{"Files +", JohnnyMenuItem::FILES_PLUS};
+    JohnnyMenuItem johnnyHome{"Home Layout", JohnnyMenuItem::HOME_LAYOUT};
+    JohnnyMenuItem johnnyPerf{"Performance", JohnnyMenuItem::PERFORMANCE};
 #endif
     FileMenu fileMenu;
     BleMenu bleMenu;
