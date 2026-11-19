@@ -625,7 +625,12 @@ int loopOptions(
     const int escX = tftWidth - BORDER_OFFSET_FROM_SCREEN_EDGE - 2 - escW;
     const int escY = BORDER_OFFSET_FROM_SCREEN_EDGE + 2;
 #endif
+#if defined(JOHNNYOS_STICKS3)
+    // JohnnyOS paints its own entire first frame; don't blank it beforehand.
+    if (!compact && menuType != MENU_TYPE_MAIN && menuType != MENU_TYPE_SUBMENU) drawMainBorder();
+#else
     if (!compact) drawMainBorder();
+#endif
     while (1) {
         // Check for shutdown before drawing menu to avoid drawing a black bar on the screen
         if (exit) break;
@@ -653,7 +658,7 @@ int loopOptions(
                 renderedByLambda = options[index].hover(options[index].hoverPointer, true);
 
             if (!renderedByLambda) {
-                if (menuType == MENU_TYPE_SUBMENU) drawSubmenu(index, options, subText);
+                if (menuType == MENU_TYPE_SUBMENU) drawSubmenu(index, options, subText, firstRender);
                 else
                     coord = drawOptions(
                         index,
@@ -1169,29 +1174,41 @@ Opt_Coord drawOptions(
 ** Function name: drawSubmenu
 ** Description:   Função para desenhar e mostrar as opçoes de contexto
 ***************************************************************************************/
-void drawSubmenu(int index, std::vector<Option> &options, const char *title) {
+void drawSubmenu(int index, std::vector<Option> &options, const char *title, bool firstRender) {
 #if defined(JOHNNYOS_STICKS3)
-    // Native StickS3 first-level menu treatment. Original actions and Option
-    // objects remain completely unchanged. Other hardware uses Bruce UI.
+    // Keep the page in TFT RAM while moving the highlight. Only the previous
+    // and current rows are repainted, preventing repeated full-screen flashes.
     if (options.empty()) return;
     const int size = (int)options.size();
     if (index < 0 || index >= size) return;
     const uint16_t white = tft.color565(250, 252, 255);
     const uint16_t secondary = tft.color565(166, 188, 225);
     const uint16_t active = tft.color565(64, 100, 205);
-    johnnyDrawWallpaper();
-    tft.setTextSize(1);
-    tft.setTextColor(white);
-    String heading(title);
-    if (heading.length() > 26) heading = heading.substring(0, 26);
-    tft.drawString(heading, 12, 8, 2);
-    tft.setTextColor(secondary);
-    tft.drawRightString(String(index + 1) + "/" + String(size), tftWidth - 9, 9, 1);
-    tft.drawFastHLine(10, 26, tftWidth - 20, tft.color565(56, 77, 127));
     const int visible = min(4, size);
     const int start = max(0, min(index - 1, size - visible));
+    static int lastIndex = -1;
+    static int lastStart = -1;
+    static int lastSize = -1;
+    bool full = firstRender || lastStart != start || lastSize != size;
+    if (full) {
+        johnnyDrawWallpaper();
+        tft.setTextSize(1);
+        tft.setTextColor(white);
+        String heading(title);
+        if (heading.length() > 22) heading = heading.substring(0, 22);
+        tft.drawString(heading, 12, 8, 2);
+        tft.drawFastHLine(10, 26, tftWidth - 20, tft.color565(56, 77, 127));
+        tft.setTextColor(secondary);
+        tft.drawCentreString("Tap move   Hold select / back", tftWidth / 2, tftHeight - 10, 1);
+    }
+    // Counter is updated in a small dark pill; no full header repaint.
+    tft.fillRoundRect(tftWidth - 51, 4, 44, 18, 6, tft.color565(27, 37, 70));
+    tft.setTextSize(1);
+    tft.setTextColor(secondary);
+    tft.drawRightString(String(index + 1) + "/" + String(size), tftWidth - 14, 9, 1);
     for (int j = 0; j < visible; j++) {
-        const int i = start + j;
+        int i = start + j;
+        if (!full && i != index && i != lastIndex) continue;
         const int y = 30 + j * 22;
         const bool selected = i == index;
         tft.fillRoundRect(10, y, tftWidth - 20, 19, 8,
@@ -1203,8 +1220,9 @@ void drawSubmenu(int index, std::vector<Option> &options, const char *title) {
         tft.drawString(options[i].label.substring(0, 30), 20, y + 6, 1);
         if (selected) tft.drawRightString(">", tftWidth - 19, y + 6, 1);
     }
-    tft.setTextColor(secondary);
-    tft.drawCentreString("Tap move   Hold select / back", tftWidth / 2, tftHeight - 10, 1);
+    lastIndex = index;
+    lastStart = start;
+    lastSize = size;
     return;
 #endif
     drawStatusBar();
