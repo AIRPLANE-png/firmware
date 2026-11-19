@@ -652,7 +652,9 @@ int loopOptions(
             }
             if (millis() - _clock_bat_timer > 30000) {
                 _clock_bat_timer = millis();
-                drawStatusBar(); // update clock and battery status each 30s
+#if !defined(JOHNNYOS_STICKS3)
+                drawStatusBar(); // Bruce's native status bar would overwrite JohnnyOS tiles
+#endif
             }
         }
 
@@ -780,12 +782,20 @@ int loopOptions(
 #if defined(JOHNNYOS_STICKS3)
         // Apply browser preferences only from the UI task, never inside the
         // asynchronous HTTP callback (NVS and LCD writes stay single-threaded).
-        uint8_t newNav = 0, newTheme = 0, newPower = 1;
-        if (johnnyRemotePopSettings(newNav, newTheme, newPower)) {
+        static unsigned long johnnyTelemetryTime = 0;
+        if (millis() - johnnyTelemetryTime > 5000) {
+            johnnyTelemetryTime = millis();
+            johnnyRemoteUpdateBattery(getBattery()); // UI task owns I2C
+        }
+        uint8_t newNav=0,newTheme=0,newPower=1,newSound=0,newPortrait=0,newWallpaper=0;
+        if (johnnyRemotePopSettings(newNav,newTheme,newPower,newSound,newPortrait,newWallpaper)) {
             johnnySetNavigationSwap(newNav != 0);
             johnnySetTheme(newTheme);
             johnnySetPowerMode(newPower);
-            firstRender = true; // refresh the current theme safely
+            johnnySetSoundEnabled(newSound != 0);
+            johnnySetPortrait(newPortrait != 0);
+            johnnySetWallpaperStyle(newWallpaper);
+            firstRender = true; // apply portrait on next launcher entry
             redraw = true;
         }
         // Phone remote commands are consumed by the menu task, not the HTTP
