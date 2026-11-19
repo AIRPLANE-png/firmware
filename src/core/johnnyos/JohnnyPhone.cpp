@@ -217,6 +217,14 @@ bool startRemote() {
         r->addHeader("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; frame-ancestors 'none'");
         req->send(r);
     });
+    remoteServer->on("/manifest.webmanifest", HTTP_GET, [](AsyncWebServerRequest *req) {
+        req->send(200,"application/manifest+json",
+            R"JS({"name":"JohnnyOS Control Center","short_name":"JohnnyOS","start_url":"/","scope":"/","display":"standalone","background_color":"#10152b","theme_color":"#10152b","icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]})JS");
+    });
+    remoteServer->on("/icon.svg", HTTP_GET, [](AsyncWebServerRequest *req) {
+        req->send(200,"image/svg+xml",
+            R"SVG(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="44" fill="#152755"/><circle cx="96" cy="96" r="61" fill="#547af6"/><path d="M55 99l24 23 60-59" fill="none" stroke="#e8f4ff" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>)SVG");
+    });
     remoteServer->on("/cmd", HTTP_POST, [](AsyncWebServerRequest *req) {
         if (!isAuthorized(req)) { req->send(403, "text/plain", "Unauthorized"); return; }
         if (!req->hasParam("k")) { req->send(400, "text/plain", "Missing command"); return; }
@@ -238,21 +246,35 @@ bool startRemote() {
         if (!isAuthorized(req)) { req->send(403, "text/plain", "Unauthorized"); return; }
         String body = String("{\"nav\":") + (johnnyNavigationSwap() ? "1" : "0") +
                       ",\"theme\":" + String(johnnyTheme()) +
-                      ",\"power\":" + String(johnnyPowerMode()) + "}";
+                      ",\"power\":" + String(johnnyPowerMode()) +
+                      ",\"sound\":" + String(johnnySoundEnabled() ? 1 : 0) +
+                      ",\"portrait\":" + String(johnnyPortrait() ? 1 : 0) +
+                      ",\"wallpaper\":" + String(johnnyWallpaperStyle()) +
+                      ",\"battery\":" + String(cachedBatteryLevel) +
+                      ",\"heap\":" + String(ESP.getFreeHeap()/1024) +
+                      ",\"wifi\":" + String(WiFi.isConnected() ? "true" : "false") + "}";
         AsyncWebServerResponse *res = req->beginResponse(200, "application/json", body);
         res->addHeader("Cache-Control", "no-store");
         req->send(res);
     });
     remoteServer->on("/settings", HTTP_POST, [](AsyncWebServerRequest *req) {
         if (!isAuthorized(req)) { req->send(403, "text/plain", "Unauthorized"); return; }
-        if (!req->hasParam("nav") || !req->hasParam("theme") || !req->hasParam("power")) {
+        if (!req->hasParam("nav") || !req->hasParam("theme") ||
+            !req->hasParam("power") || !req->hasParam("sound") ||
+            !req->hasParam("portrait") || !req->hasParam("wallpaper")) {
             req->send(400, "text/plain", "Missing settings"); return;
         }
         String nav = req->getParam("nav")->value();
         String theme = req->getParam("theme")->value();
         String power = req->getParam("power")->value();
+        String sound = req->getParam("sound")->value();
+        String portrait = req->getParam("portrait")->value();
+        String wallpaper = req->getParam("wallpaper")->value();
         if ((nav != "0" && nav != "1") ||
+            (sound != "0" && sound != "1") ||
+            (portrait != "0" && portrait != "1") ||
             (theme != "0" && theme != "1" && theme != "2") ||
+            (wallpaper != "0" && wallpaper != "1" && wallpaper != "2") ||
             (power != "0" && power != "1" && power != "2")) {
             req->send(400, "text/plain", "Invalid settings"); return;
         }
@@ -260,6 +282,9 @@ bool startRemote() {
         pendingNav = (uint8_t)nav.toInt();
         pendingTheme = (uint8_t)theme.toInt();
         pendingPower = (uint8_t)power.toInt();
+        pendingSound = (uint8_t)sound.toInt();
+        pendingPortrait = (uint8_t)portrait.toInt();
+        pendingWallpaper = (uint8_t)wallpaper.toInt();
         settingsPending = true;
         req->send(202, "text/plain", "Queued");
     });
@@ -280,11 +305,17 @@ bool startRemote() {
 }
 } // namespace
 
-bool johnnyRemotePopSettings(uint8_t &nav, uint8_t &theme, uint8_t &power) {
+void johnnyRemoteUpdateBattery(int battery) { cachedBatteryLevel = battery; }
+
+bool johnnyRemotePopSettings(uint8_t &nav, uint8_t &theme, uint8_t &power,
+                             uint8_t &sound, uint8_t &portrait, uint8_t &wallpaper) {
     if (!settingsPending) return false;
     nav = pendingNav;
     theme = pendingTheme;
     power = pendingPower;
+    sound = pendingSound;
+    portrait = pendingPortrait;
+    wallpaper = pendingWallpaper;
     settingsPending = false;
     return true;
 }
