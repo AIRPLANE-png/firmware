@@ -31,6 +31,24 @@ The 3 physical button count includes the power/reset button; the Bruce input dri
 
 Games reuse the two navigation buttons, with hold Back to exit. The final physical labeling needs device testing.
 
+## Performance and battery (new v0.4 source)
+
+JohnnyOS has three power profiles under **Themes / Appearance**. **KEY1 Next** changes the theme; **KEY1 Select** cycles the power profile; **KEY2 Back** exits.
+
+| Power profile | Active backlight | Dim after inactivity |
+| --- | --- | --- |
+| Eco | 30% | 10 seconds |
+| Balanced (default) | 58% | 20 seconds |
+| Bright | 85% | 30 seconds |
+
+After the standard dimmer period, Bruce's existing power-save path turns the screen off following its configured extra delay. A button press wakes it. Profiles are stored under the JohnnyOS NVS namespace and reapplied at boot without saving the Bruce configuration file on every boot.
+
+Other optimizations: fewer full-screen redraws, shorter startup dot animation, faster two-button menu navigation, 60ms LCD wake delay, bounded game frame rates, lower idle IMU polling when the Bluetooth mouse is unpaired, and automatically turning off an otherwise unused Wi-Fi radio after JohnnyOS Wi-Fi scans.
+
+**These are code-level optimizations, not verified battery-runtime measurements.** Battery savings depend on brightness, Wi-Fi/BLE use, peripherals, and your individual StickS3. Wi-Fi and Bluetooth remain available when their applications need them. No CPU overclock or untested radio clock changes have been added.
+
+**Build status:** after any source change, use the latest successful GitHub Actions run for the matching commit SHA. An older artifact does *not* include these changes.
+
 ## Hardware test checklist
 
 1. Flash the merged image at 0x0000.
