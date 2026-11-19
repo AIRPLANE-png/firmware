@@ -126,7 +126,9 @@ void johnnyMouse() {
             }
         }
         priorConnected = mouseConnected;
-        delay(12);
+        // IMU only needs a fast cadence while paired. Lower idle polling
+        // reduces needless sensor reads and CPU wakeups during advertising.
+        delay(mouseConnected ? 20 : 60);
     }
     advertising->stop();
     delete hid;
