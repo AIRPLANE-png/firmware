@@ -13,6 +13,7 @@ void johnnyPlayLastVoice();
 // Pump a single authorized phone command into Bruce's existing navigation
 // flow, from the loop task rather than from an AsyncWebServer worker task.
 bool johnnyRemotePop(uint8_t &key);
+void johnnyPumpRemoteButtons(); // for standalone apps outside Bruce menu loop
 // Preferences are queued by the HTTP worker, then applied on the UI task.
 bool johnnyRemotePopSettings(uint8_t &nav, uint8_t &theme, uint8_t &power,
                              uint8_t &sound, uint8_t &portrait, uint8_t &wallpaper);
