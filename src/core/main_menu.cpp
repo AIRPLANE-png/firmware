@@ -214,8 +214,9 @@ void MainMenu::drawJohnnyLauncher(int index) {
         tft.drawString(johnnySoundEnabled() ? "S" : "x", 78, 9, 1);
     } else {
         tft.drawString("Johnny", 9, 5, 2);
-        tft.setTextColor(tft.color565(124,181,255));
+        tft.setTextColor(tft.color565(146,207,255));
         tft.drawString("OS", 61, 5, 2);
+        tft.drawFastHLine(9, 21, 76, tft.color565(88, 137, 239));
         tft.setTextColor(muted);
         tft.drawString(WiFi.isConnected() ? "Wi-Fi" : "Offline", 114, 9, 1);
         tft.drawString(johnnySoundEnabled() ? "Sound" : "Muted", 155, 9, 1);
@@ -242,12 +243,18 @@ void MainMenu::drawJohnnyLauncher(int index) {
         // One opaque rounded card per app. Restoring the exact same compact
         // card on incremental repaints is much faster than re-creating the
         // wallpaper gradient, and keeps all artwork inside its own tile.
-        tft.fillRoundRect(x + 3, y - 2, cellW - 6, portrait ? 56 : 44, 10,
-                          selected ? tft.color565(36, 53, 96)
-                                   : tft.color565(22, 32, 65));
+        const int tileHeight = portrait ? 56 : 44;
+        const uint16_t surface = selected ? tft.color565(38, 55, 101)
+                                          : tft.color565(23, 34, 65);
+        tft.fillRoundRect(x + 3, y - 2, cellW - 6, tileHeight, 10, surface);
+        // Thin frosted border; use the same rect for active and idle states
+        // so the tile does not jitter when selection moves.
+        tft.drawRoundRect(x + 3, y - 2, cellW - 6, tileHeight, 10,
+                          selected ? tft.color565(151, 200, 255)
+                                   : tft.color565(45, 62, 100));
         if (selected)
-            tft.drawRoundRect(x + 3, y - 2, cellW - 6, portrait ? 56 : 44, 10,
-                              tft.color565(119, 161, 236));
+            tft.drawFastHLine(x + cellW / 2 - 11, y - 1, 22,
+                              tft.color565(173, 222, 255));
 
         const String name = options[i].label;
         uint16_t mainColor = accent[i % 8];
@@ -266,13 +273,15 @@ void MainMenu::drawJohnnyLauncher(int index) {
         // All symbols are centered on (cx, iconY + 15). The icon square is
         // exactly 30x30, and the selected outline stays clear of the label.
         tft.fillRoundRect(iconX + 1, iconY + 2, 30, 29, 9,
-                          tft.color565(11, 19, 42));
+                          tft.color565(9, 17, 38));
         tft.fillRoundRect(iconX, iconY, 30, 30, 9, mainColor);
-        if (selected)
-            tft.drawRoundRect(iconX - 1, iconY - 1, 32, 32, 10,
-                              tft.color565(224, 239, 255));
-        tft.drawFastHLine(iconX + 10, iconY + 4, 10,
-                          tft.color565(213, 233, 255));
+        tft.drawRoundRect(iconX, iconY, 30, 30, 9,
+                          selected ? tft.color565(236, 246, 255)
+                                   : tft.color565(141, 184, 237));
+        // A tiny two-step glass reflection provides depth without repainting
+        // the whole screen or running a blocking selection animation.
+        tft.drawFastHLine(iconX + 10, iconY + 4, 11, tft.color565(228, 243, 255));
+        tft.drawFastHLine(iconX + 11, iconY + 5, 8, tft.color565(178, 213, 245));
 
         if (name == "Johnny AI") {
             // Sparkle inside the assistant icon.
@@ -355,19 +364,30 @@ void MainMenu::drawJohnnyLauncher(int index) {
         else if (name == "Wi-Fi Scan") label = "Wi-Fi";
         else if (name == "BLE") label = "Bluetooth";
         else if (name == "IR") label = "IR Remote";
+        else if (name == "Phone Remote") label = "Remote";
+        else if (name == "Air Mouse") label = "Air Mouse";
+        else if (name == "Home Layout") label = "Layout";
+        else if (name == "Performance") label = "Monitor";
+        else if (name == "Calculator") label = "Calculator";
+        // Label backgrounds match the tile surface, not the wallpaper.
+        // This makes selected text clearer and removes ghosting in fast scans.
         tft.setTextColor(selected ? white : muted);
-        tft.drawCentreString(label.substring(0, 10), cx, iconY + 33, 1);
+        tft.drawCentreString(label.substring(0, 11), cx, iconY + 33, 1);
     }
     if (full) {
     // Native input map: GPIO11 next / hold select; GPIO12 previous / hold back.
     const int fy = tftHeight - 15;
     tft.fillRoundRect(7, fy - 1, tftWidth - 14, 14, 5, tft.color565(16,26,56));
     tft.setTextColor(muted);
-    String dock = String("PIN: ") + johnnyFavorite();
-    dock = dock.substring(0, portrait ? 12 : 23);
+    String dock = String("* ") + johnnyFavorite();
+    dock = dock.substring(0, portrait ? 9 : 18);
     tft.drawString(dock, 12, fy + 2, 1);
-    tft.drawRightString(String(page+1) + "/" + String((count+perPage-1)/perPage),
-                        tftWidth - 10, fy + 2, 1);
+    const int pageCount = (count + perPage - 1) / perPage;
+    const int dotStart = tftWidth - 13 - pageCount * 9;
+    for (int dot = 0; dot < pageCount; dot++) {
+        tft.fillCircle(dotStart + dot * 9, fy + 6, dot == page ? 3 : 2,
+                       dot == page ? white : tft.color565(97, 122, 170));
+    }
     }
     _johnnyLastIndex = index;
     _johnnyLastPage = page;
