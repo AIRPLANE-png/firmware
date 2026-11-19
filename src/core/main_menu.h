@@ -67,7 +67,6 @@ public:
     void drawGrid(int index);
 #if defined(JOHNNYOS_STICKS3)
     void drawJohnnyLauncher(int index);
-    void drawJohnnyTile(int index, bool selected);
 #endif
     int gridIndexOf(MenuItemInterface *item);
 
