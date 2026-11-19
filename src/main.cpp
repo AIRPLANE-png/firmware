@@ -88,6 +88,19 @@ void __attribute__((weak)) taskInputHandler(void *parameter) {
     auto timer = millis();
     while (true) {
         checkPowerSaveTime();
+#if defined(JOHNNYOS_STICKS3)
+        // Fast input must sample every 5ms and never erase an unconsumed
+        // navigation flag. The GPIO driver buffers a bounded burst queue.
+        // Keep processing separate from TFT rendering and other app work.
+        inputLock();
+        InputHandler();
+        inputUnlock();
+        if (millis() - timer > 110) {
+            if (!NextPress && !PrevPress && !SelPress && !EscPress) AnyKeyPress = false;
+            timer = millis();
+        }
+        vTaskDelay(pdMS_TO_TICKS(5));
+#else
         // Sometimes this task run 2 or more times before looptask,
         // and navigation gets stuck, the idea here is run the input detection
         // if AnyKeyPress is false, or rerun if it was not renewed within 75ms (arbitrary)
@@ -113,6 +126,7 @@ void __attribute__((weak)) taskInputHandler(void *parameter) {
             timer = millis();
         }
         vTaskDelay(pdMS_TO_TICKS(10));
+#endif
     }
 }
 // Public Globals Variables
