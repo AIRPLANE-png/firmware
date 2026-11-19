@@ -602,7 +602,11 @@ void loop() {
         previousMillis = millis(); // ensure that will not dim screen when get back to menu
     }
 #endif
+#if !defined(JOHNNYOS_STICKS3)
+    // JohnnyOS draws its own home screen. Clearing here causes a visible
+    // black flash every time the user leaves an app.
     tft.fillScreen(bruceConfig.bgColor);
+#endif
 
 #if defined(ENABLE_RAM_LOGGING)
     static bool ramLoggedFirstMenu = false;
