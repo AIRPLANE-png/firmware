@@ -166,9 +166,16 @@ void showWifi() {
     clearInputs();
     titleBar("Wi-Fi Scanner", "Scanning...");
     footer("Searching for real APs");
-    if (WiFi.getMode() == WIFI_MODE_NULL) WiFi.mode(WIFI_STA);
+    // An occasional network scan must not leave the Wi-Fi radio powered on
+    // if JohnnyOS originally entered the scanner with Wi-Fi disabled.
+    const bool radioWasOff = WiFi.getMode() == WIFI_MODE_NULL;
+    if (radioWasOff) WiFi.mode(WIFI_STA);
     int found = WiFi.scanNetworks(false, true);
-    if (found < 0) { note("Wi-Fi scanning failed"); return; }
+    if (found < 0) {
+        if (radioWasOff && !isWebUIActive) WiFi.mode(WIFI_OFF);
+        note("Wi-Fi scanning failed");
+        return;
+    }
     int selected = 0;
     const int count = min(found, 24);
     int lastSelected = -1;
@@ -212,6 +219,8 @@ void showWifi() {
         delay(25);
     }
     WiFi.scanDelete();
+    if (radioWasOff && !WiFi.isConnected() && !isWebUIActive)
+        WiFi.mode(WIFI_OFF); // avoid idle radio battery drain
     clearInputs();
 }
 void saveBest(int game, int score) {
@@ -237,6 +246,8 @@ void playGame(int game) {
     float birdY = 55, fall = 0;
     uint32_t started = millis(), lastFrame = 0, waitUntil = millis() + random(1800, 3600);
     bool reacted = false;
+    bool reactionDrawn = false;
+    bool reactionReadyDrawn = false;
     clearInputs();
     titleBar(names[game], "0 pts");
     footer(game == 0 ? "Short: turn  Hold BACK: exit" :
@@ -266,9 +277,22 @@ void playGame(int game) {
         } else if (game == 4) {
             if (right || select) fall = -4.7f;
         }
-        int interval = game == 0 ? 160 : game == 2 ? 35 : 45;
+        // Cap refresh to avoid burning CPU/SPI bandwidth on unnecessary
+        // frames. Interactive games remain near 17-20 fps; Snake is 6 fps.
+        int interval = game == 0 ? 160 : game == 2 ? 100
+                       : game == 3 ? 60 : 50;
         if (millis() - lastFrame < (uint32_t)interval) { delay(10); continue; }
         lastFrame = millis();
+        if (game == 2) {
+            bool ready = millis() >= waitUntil;
+            // The reaction screen is static until the target appears.
+            if (reactionDrawn && reactionReadyDrawn == ready) {
+                delay(15);
+                continue;
+            }
+            reactionDrawn = true;
+            reactionReadyDrawn = ready;
+        }
         tick++;
         if (game == 0) {
             int nx = headX + (direction == 1) - (direction == 3);
