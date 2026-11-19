@@ -1,15 +1,8 @@
 name: JohnnyOS StickS3 Cloud Build
+# Manual builds only: prevents dozens of paid or cancelled compilations
+# while firmware source files are edited.
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/johnnyos-sticks3.yml'
-      - 'src/**'
-      - 'include/**'
-      - 'boards/**'
-      - 'platformio.ini'
-      - 'build.py'
-      - 'JOHNNYOS_FLASHING.md'
 
 # Keep only the newest requested firmware build to avoid resource contention.
 concurrency:
@@ -59,7 +52,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: JohnnyOS-StickS3-Performance-v0.4
+          name: JohnnyOS-StickS3-UI-Controls-v0.5
           path: |
             JohnnyOS-m5stack-sticks3.bin
             JOHNNYOS_FLASHING.md
