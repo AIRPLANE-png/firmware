@@ -462,20 +462,22 @@ void johnnyDrawWallpaper() {
     tft.fillCircle(tftWidth - 14, 8, 27, color(theme == 1 ? 54 : 32, theme == 2 ? 92 : 42, 119));
 }
 void johnnyDrawBoot() {
-    const uint32_t start = millis();
-    for (int frame = 0; frame < 12; frame++) {
-        johnnyDrawWallpaper();
-        tft.setTextColor(TEXT);
-        tft.drawCentreString("JohnnyOS", tftWidth / 2, 39, 4);
-        tft.setTextColor(dimColor());
-        tft.drawCentreString("STICKS3 EDITION", tftWidth / 2, 76, 1);
+    // One background paint and only a 56x15 dot animation afterward.
+    // This avoids repeated full-screen SPI transfers and shortens boot time.
+    johnnyDrawWallpaper();
+    tft.setTextColor(TEXT);
+    tft.drawCentreString("JohnnyOS", tftWidth / 2, 39, 4);
+    tft.setTextColor(dimColor());
+    tft.drawCentreString("STICKS3 EDITION", tftWidth / 2, 76, 1);
+    for (int frame = 0; frame < 7; frame++) {
+        tft.fillRoundRect(tftWidth / 2 - 28, 98, 56, 16, 8, panelColor());
         for (int j = 0; j < 3; ++j)
-            tft.fillCircle(tftWidth / 2 - 13 + j * 13, 104, 2 + (j == frame % 3), tint());
-        delay(85);
+            tft.fillCircle(tftWidth / 2 - 13 + j * 13, 106,
+                           j == frame % 3 ? 4 : 2, tint());
         if (check(AnyKeyPress)) break;
+        delay(75);
     }
-    (void)start;
-    tft.fillScreen(TFT_BLACK);
+    // The home screen will replace the splash; don't flash black in between.
 }
 void JohnnyMenuItem::optionsMenu() {
     switch (_kind) {
