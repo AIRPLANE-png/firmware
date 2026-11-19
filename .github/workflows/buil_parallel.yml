@@ -5,25 +5,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Fork safety: the upstream workflow builds a very large board matrix.
+# Do not launch that release matrix on every JohnnyOS source commit.
+# Maintainers can still run it explicitly using workflow_dispatch.
 on:
-  push:
-    branches:
-      - main
-      - dev
-
-    paths:
-        - "**.yml"
-        - "**.h"
-        - "**.cpp"
-        - "**.py"
-        - "**.html"
-        - "**.css"
-        - "**.js"
-        - "**.ini"
-        - "**.json"
-        - "**.csv"
-    tags:
-      - "*"
   workflow_dispatch:
 
 jobs:
