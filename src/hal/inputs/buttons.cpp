@@ -3,6 +3,9 @@
 #include "core/display.h"
 #include "core/powerSave.h"
 #include "globals.h"
+#if defined(JOHNNYOS_STICKS3)
+#include "core/johnnyos/JohnnyApps.h"
+#endif
 
 #if defined(BUTTONS_IDF_COMPONENT)
 #include <Button.h>
@@ -14,10 +17,24 @@ static volatile bool hal2PendingSel = false;
 static volatile bool hal2PendingPrev = false;
 static volatile bool hal2PendingEsc = false;
 
-static void hal2OnBtn1Click(void *, void *) { hal2PendingNext = true; }
+static void hal2OnBtn1Click(void *, void *) {
+#if defined(JOHNNYOS_STICKS3)
+    if (johnnySwapNavigation) hal2PendingPrev = true;
+    else hal2PendingNext = true;
+#else
+    hal2PendingNext = true;
+#endif
+}
 static void hal2OnBtn1Long(void *, void *) { hal2PendingSel = true; }
 static void hal2OnBtn1Double(void *, void *) { hal2PendingSel = true; }
-static void hal2OnBtn2Click(void *, void *) { hal2PendingPrev = true; }
+static void hal2OnBtn2Click(void *, void *) {
+#if defined(JOHNNYOS_STICKS3)
+    if (johnnySwapNavigation) hal2PendingNext = true;
+    else hal2PendingPrev = true;
+#else
+    hal2PendingPrev = true;
+#endif
+}
 static void hal2OnBtn2Long(void *, void *) { hal2PendingEsc = true; }
 static void hal2OnBtn2Double(void *, void *) { hal2PendingEsc = true; }
 #endif
@@ -77,25 +94,25 @@ void hal_buttons_init_2(const DeviceButtons &cfg, uint16_t long_press_ms) {
 
 void hal_buttons_poll_2() {
 #if defined(BUTTONS_IDF_COMPONENT)
-    static unsigned long tm = 0;
-    static bool btnPressed = false;
-    if (hal2PendingNext || hal2PendingPrev || hal2PendingSel || hal2PendingEsc) btnPressed = true;
+    // The button component delivers debounced click/hold events. Pass them
+    // through immediately; there is no benefit to another 200ms gate.
+    if (!(hal2PendingNext || hal2PendingPrev || hal2PendingSel || hal2PendingEsc)) return;
+    const bool next = hal2PendingNext;
+    const bool prev = hal2PendingPrev;
+    const bool select = hal2PendingSel;
+    const bool back = hal2PendingEsc;
+    hal2PendingNext = false;
+    hal2PendingPrev = false;
+    hal2PendingSel = false;
+    hal2PendingEsc = false;
 
-    if (millis() - tm > 200 || LongPress) {
-        if (btnPressed) {
-            btnPressed = false;
-            if (!wakeUpScreen()) AnyKeyPress = true;
-            else return;
-            NextPress = hal2PendingNext;
-            PrevPress = hal2PendingPrev;
-            SelPress = hal2PendingSel;
-            EscPress = hal2PendingEsc;
-            hal2PendingNext = false;
-            hal2PendingPrev = false;
-            hal2PendingSel = false;
-            hal2PendingEsc = false;
-        }
-    }
+    // First input wakes an idle display without activating a hidden item.
+    if (wakeUpScreen()) return;
+    AnyKeyPress = true;
+    NextPress = next;
+    PrevPress = prev;
+    SelPress = select;
+    EscPress = back;
 #endif
 }
 
