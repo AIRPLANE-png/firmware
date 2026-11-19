@@ -16,6 +16,8 @@ String accessCode;
 uint32_t lastCommandMs = 0;
 volatile bool settingsPending = false;
 volatile uint8_t pendingNav = 0, pendingTheme = 0, pendingPower = 1;
+volatile uint8_t pendingSound = 0, pendingPortrait = 0, pendingWallpaper = 0;
+volatile int cachedBatteryLevel = -1;
 
 // An authorization code is shown only on the StickS3 screen. The browser UI
 // does not embed it. Control stays within the phone's current Wi-Fi network.
@@ -23,6 +25,11 @@ const char REMOTE_UI[] PROGMEM = R"JOHNNY(
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#10152b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JohnnyOS">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>JohnnyOS Control Center</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -51,6 +58,11 @@ button:active{transform:scale(.97)}button:focus-visible{outline:3px solid #c9def
 hr{height:1px;border:0;background:#94b1e12b;margin:18px 0}
 #status{font-size:13px;min-height:24px;color:#b2d5ff;padding:4px 2px 0}
 .note{color:#9eafd2;font-size:12px;line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.stat{background:#142447;border:1px solid #7995c145;border-radius:12px;padding:12px 5px;text-align:center}
+.stat strong{display:block;font-size:19px;color:#eff8ff}
+.stat span{font-size:11px;color:#aabfe3}
+.pill{font-size:11px;background:#244574;border-radius:100px;padding:6px 9px}
 @media(hover:hover){button:hover{filter:brightness(1.12)}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 </style></head><body><main>
@@ -62,6 +74,11 @@ hr{height:1px;border:0;background:#94b1e12b;margin:18px 0}
 <button class="primary" onclick="loadSettings()">Connect &amp; load settings</button>
 <div id="status" role="status" aria-live="polite">Enter your device pairing code to begin.</div>
 </section>
+<section class="card"><div class="row"><h2>Live device dashboard</h2><span class="mini" id="live">OFFLINE</span></div>
+<div class="stats"><div class="stat"><strong id="battery">--</strong><span>Battery</span></div>
+<div class="stat"><strong id="heap">--</strong><span>Free memory</span></div>
+<div class="stat"><strong id="wifi">--</strong><span>Wi-Fi</span></div></div>
+<p class="note">Updates while this page is open. No cloud account needed.</p></section>
 <section class="card"><div class="row"><h2>Remote control</h2><span class="mini">MENU</span></div>
 <div class="nav">
 <button onclick="go('prev')">◀ Previous<small>Move left / up</small></button>
@@ -76,12 +93,19 @@ hr{height:1px;border:0;background:#94b1e12b;margin:18px 0}
 <option value="1">Reversed: Key 1 Previous / Key 2 Next</option></select></div>
 <div class="setting"><label for="theme">Color theme</label><select id="theme">
 <option value="0">Ocean blue</option><option value="1">Violet</option><option value="2">Mint</option></select></div>
+<div class="setting"><label for="wallpaper">Wallpaper</label><select id="wallpaper"><option value="0">Soft gradient</option><option value="1">Midnight</option><option value="2">Aurora</option></select></div>
+<div class="setting"><label for="orientation">Home orientation</label><select id="orientation"><option value="0">Landscape</option><option value="1">Portrait (home only)</option></select></div>
+<div class="setting"><label for="sound">AI speaker volume</label><select id="sound"><option value="0">Off (default)</option><option value="1">On</option></select></div>
 <div class="setting"><label for="power">Display power</label><select id="power">
 <option value="0">Eco - 30% brightness</option><option value="1">Balanced - 58% brightness</option>
 <option value="2">Bright - 85% brightness</option></select></div>
 <hr><div class="row"><button class="primary" onclick="saveSettings()">Save settings</button>
 <button class="ghost" onclick="loadSettings()">Refresh</button></div>
 <p class="note" style="margin-top:15px">Settings are applied through the device menu. If you are inside an app, return to the home screen after saving.</p>
+</section>
+<section class="card"><div class="row"><h2>Game controller</h2><span class="mini">GAMEPAD</span></div>
+<p>Works in supported JohnnyOS mini-games while the local remote is connected.</p>
+<div class="nav"><button onclick="go('prev')">◀ Left</button><button onclick="go('next')">Right ▶</button><button class="important" onclick="go('select')">Action</button><button onclick="go('back')">Exit</button></div>
 </section>
 <section class="card"><div class="row"><h2>Offline assistant</h2><span class="mini">ON DEVICE</span></div>
 <p>Ask about battery, controls, Wi-Fi, games, or settings. Answers come from a small built-in knowledge base, not a cloud model.</p>
@@ -90,9 +114,23 @@ hr{height:1px;border:0;background:#94b1e12b;margin:18px 0}
 <div class="row" style="margin:12px 0"><button class="primary" onclick="askOffline()">Ask offline</button></div>
 <p id="answer" aria-live="polite" style="white-space:pre-wrap;color:#e9f1ff">Your answer will appear here.</p>
 </section>
-<p class="note">The assistant works without internet. The browser page itself needs local Wi-Fi to reach your StickS3.</p>
+<section class="card"><h2>Add to your phone</h2>
+<p>Open your browser's Share/Menu and choose "Add to Home Screen". Your JohnnyOS control panel will open like an app while connected to your StickS3 Wi-Fi network.</p>
+<p class="note">This local HTTP companion is a home-screen shortcut, not an App Store app. Some browsers require HTTPS for full PWA installation. The phone still needs local Wi-Fi to reach the StickS3.</p></section>
 </main><script>
 const $=id=>document.getElementById(id), say=t=>$('status').textContent=t;
+let connected=false;
+function renderState(d){
+$('battery').textContent=d.battery>=0?d.battery+'%':'--';
+$('heap').textContent=d.heap+' KB';$('wifi').textContent=d.wifi?'Ready':'Offline';
+$('live').textContent='LIVE';
+}
+setInterval(async()=>{
+if(!connected||document.visibilityState!=='visible'||!valid())return;
+try{let r=await fetch('/state',{headers:headers(),cache:'no-store'});if(r.ok)renderState(await r.json());}
+catch(e){$('live').textContent='RETRYING'}
+},6000);
+
 const code=()=>$('pin').value.trim().toUpperCase();
 const valid=()=>{if(!/^[0-9A-F]{8}$/.test(code())){say('Enter the 8-character code shown on the device.');return false}return true};
 function headers(){return {'X-Johnny-Code':code()}}
@@ -107,7 +145,8 @@ if(!valid())return;
 try{let r=await fetch('/state',{headers:headers(),cache:'no-store'});
 if(!r.ok)throw Error(r.status===403?'Pairing code incorrect':'Could not load settings');
 let d=await r.json();$('nav').value=String(d.nav);$('theme').value=String(d.theme);$('power').value=String(d.power);
-say('Connected! Settings loaded.');}
+$('sound').value=String(d.sound);$('orientation').value=String(d.portrait);$('wallpaper').value=String(d.wallpaper);
+renderState(d);connected=true;say('Connected! Settings loaded.');}
 catch(e){say(e.message||'Connection failed')}
 }
 async function askOffline(){
@@ -123,7 +162,7 @@ $('answer').textContent=await r.text();say('Answered locally on StickS3.');
 async function saveSettings(){
 if(!valid())return;
 try{
-let params=new URLSearchParams({nav:$('nav').value,theme:$('theme').value,power:$('power').value});
+let params=new URLSearchParams({nav:$('nav').value,theme:$('theme').value,power:$('power').value,sound:$('sound').value,portrait:$('orientation').value,wallpaper:$('wallpaper').value});
 let r=await fetch('/settings?'+params.toString(),{method:'POST',headers:headers(),cache:'no-store'});
 if(!r.ok)throw Error(r.status===403?'Pairing code incorrect':r.status===429?'Device busy, try again':'Could not apply preferences');
 say('Settings sent together. Return to the device menu to apply.');
