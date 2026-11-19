@@ -147,8 +147,8 @@ void MainMenu::drawJohnnyLauncher(int index) {
     const int count = (int)options.size();
     if (count == 0) return;
     index = constrain(index, 0, count - 1);
-    const int cols = 4;
-    const int perPage = 8;
+    const int cols = 3;
+    const int perPage = 6;
     const int page = index / perPage;
     const uint16_t white = tft.color565(248, 251, 255);
     const uint16_t muted = tft.color565(176, 195, 229);
@@ -201,16 +201,29 @@ void MainMenu::drawJohnnyLauncher(int index) {
             }
         }
 
-        const uint16_t mainColor = accent[i % 8];
+        const String name = options[i].label;
+        uint16_t mainColor = accent[i % 8];
+        if (name == "Johnny AI") mainColor = tft.color565(160, 111, 249);
+        else if (name == "Wi-Fi Scan" || name == "WiFi") mainColor = tft.color565(53, 173, 248);
+        else if (name == "BLE") mainColor = tft.color565(76, 117, 241);
+        else if (name == "Games") mainColor = tft.color565(251, 139, 105);
+        else if (name == "IR") mainColor = tft.color565(234, 91, 119);
+        else if (name == "Files") mainColor = tft.color565(62, 162, 247);
+        else if (name == "Themes") mainColor = tft.color565(144, 153, 176);
+        else if (name == "System") mainColor = tft.color565(87, 117, 155);
+        else if (name == "Phone Remote") mainColor = tft.color565(40, 185, 186);
+        else if (name == "Air Mouse") mainColor = tft.color565(52, 195, 157);
+        else if (name == "Media") mainColor = tft.color565(218, 106, 196);
+        else if (name == "Controls") mainColor = tft.color565(240, 162, 93);
         if (selected) {
             tft.fillRoundRect(iconX - 4, iconY - 4, 38, 39, 12, tft.color565(197, 222, 255));
             tft.fillRoundRect(iconX - 2, iconY - 2, 34, 35, 10, tft.color565(44, 58, 114));
         }
         tft.fillRoundRect(iconX + 1, iconY + 3, 30, 31, 9, tft.color565(9, 16, 48));
         tft.fillRoundRect(iconX, iconY, 30, 30, 9, mainColor);
-        tft.drawFastHLine(iconX + 8, iconY + 4, 14, tft.color565(190, 213, 254));
+        tft.drawFastHLine(iconX + 8, iconY + 4, 14, tft.color565(210, 232, 255));
+        tft.drawFastHLine(iconX + 10, iconY + 6, 10, tft.color565(162, 196, 238));
 
-        const String name = options[i].label;
         if (name == "Johnny AI") {
             // Sparkle inside the assistant icon.
             tft.drawLine(cx, iconY + 5, cx, iconY + 25, white);
@@ -284,7 +297,7 @@ void MainMenu::drawJohnnyLauncher(int index) {
     tft.fillRoundRect(8, 121, tftWidth - 16, 12, 5, tft.color565(16, 26, 56));
     tft.setTextColor(muted);
     tft.drawString("Tap: move  Hold: select/back", 13, 124, 1);
-    tft.drawRightString(String(page + 1) + "/" + String((count + 7) / 8), tftWidth - 10, 124, 1);
+    tft.drawRightString(String(page + 1) + "/" + String((count + perPage - 1) / perPage), tftWidth - 10, 124, 1);
     }
     _johnnyLastIndex = index;
     _johnnyLastPage = page;
