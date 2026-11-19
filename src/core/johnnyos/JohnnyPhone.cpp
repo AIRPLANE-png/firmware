@@ -87,7 +87,7 @@ hr{height:1px;border:0;background:#94b1e12b;margin:18px 0}
 <button onclick="go('back')">↶ Back<small>Exit a menu</small></button>
 </div></section>
 <section class="card"><div class="row"><h2>Customize JohnnyOS</h2><span class="mini">PREFERENCES</span></div>
-<p>Saved on your StickS3. Hold / double-tap actions stay fixed so you can always Select and Back.</p>
+<p>Saved on your StickS3. Short taps navigate instantly, even when pressed quickly twice. Hold Key 1 for Select and hold Key 2 for Back.</p>
 <div class="setting"><label for="nav">Physical navigation taps</label>
 <select id="nav"><option value="0">Standard: Key 1 Next / Key 2 Previous</option>
 <option value="1">Reversed: Key 1 Previous / Key 2 Next</option></select></div>
