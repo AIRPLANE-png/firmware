@@ -61,38 +61,39 @@ void showAI() {
     int selected = 0;
     int previousSelection = -1;
     bool full = true;
-    const char *choices[] = {"Push-to-talk", "Play last voice", "AI service status", "Personality"};
+    const char *choices[] = {"Offline Q&A", "Record voice", "Play voice", "Online AI status", "Personality"};
     const char *personas[] = {"Friendly", "Tech", "Concise"};
     Preferences prefs;
     prefs.begin("johnnyos", true);
     uint8_t persona = prefs.getUChar("persona", 0) % 3;
     prefs.end();
     auto drawAIChoice = [&](int i) {
-        if (i < 0 || i >= 4) return;
-        const int y = 27 + i * 22;
+        if (i < 0 || i >= 5) return;
+        const int y = 26 + i * 18;
         const bool active = selected == i;
-        tft.fillRoundRect(111, y, 121, 19, 7,
+        tft.fillRoundRect(111, y, 121, 17, 6,
                           active ? color(66, 102, 212) : panelColor());
         tft.setTextSize(1);
         tft.setTextColor(active ? TEXT : dimColor());
-        String label = i == 3 ? String("Style: ") + personas[persona] : choices[i];
-        tft.drawString(label, 118, y + 5, 1);
+        String label = i == 4 ? String("Style: ") + personas[persona] : choices[i];
+        tft.drawString(label, 117, y + 4, 1);
     };
     clearInputs();
     while (true) {
         if (check(EscPress)) break;
-        if (check(PrevPress)) selected = (selected + 3) % 4;
-        if (check(NextPress)) selected = (selected + 1) % 4;
+        if (check(PrevPress)) selected = (selected + 4) % 5;
+        if (check(NextPress)) selected = (selected + 1) % 5;
         if (check(SelPress)) {
-            if (selected == 0) { johnnyPushToTalk(); full = true; }
-            else if (selected == 1) { johnnyPlayLastVoice(); full = true; }
-            else if (selected == 2) { note("Online AI needs a secure service"); full = true; }
+            if (selected == 0) { johnnyOfflineChat(); full = true; }
+            else if (selected == 1) { johnnyPushToTalk(); full = true; }
+            else if (selected == 2) { johnnyPlayLastVoice(); full = true; }
+            else if (selected == 3) { note("Online AI needs a secure service"); full = true; }
             else {
                 persona = (persona + 1) % 3;
                 prefs.begin("johnnyos", false);
                 prefs.putUChar("persona", persona);
                 prefs.end();
-                drawAIChoice(3);
+                drawAIChoice(4);
             }
             clearInputs();
         }
@@ -107,8 +108,8 @@ void showAI() {
             tft.setTextColor(TEXT);
             tft.drawCentreString("AI", cx, cy - 3, 1);
             tft.setTextColor(dimColor());
-            tft.drawCentreString("NO AI SERVICE", cx, 111, 1);
-            for (int i = 0; i < 4; ++i) drawAIChoice(i);
+            tft.drawCentreString("OFFLINE READY", cx, 111, 1);
+            for (int i = 0; i < 5; ++i) drawAIChoice(i);
             footer("Short: move  Hold: select / back");
         } else if (previousSelection != selected) {
             drawAIChoice(previousSelection);
