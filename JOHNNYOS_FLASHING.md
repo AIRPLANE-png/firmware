@@ -1,4 +1,4 @@
-# JohnnyOS StickS3 flashing guide (Visual Edition v0.6)
+# JohnnyOS StickS3 flashing guide (FastTap Visual Edition v0.7)
 
 **Target:** M5Stack StickS3, ESP32-S3-PICO-1-N8R8, 8 MB flash / 8 MB PSRAM.
 
@@ -25,8 +25,8 @@ Connect directly with a data-capable USB-C cable. If flashing reports serial cor
 
 The 3 physical button count includes the power/reset button; the Bruce input driver currently uses two menu buttons:
 
-- GPIO 11: single click = **Next** by default; double click or hold = **Select** (always fixed)
-- GPIO 12: single click = **Previous** by default; double click or hold = **Back** (always fixed)
+- GPIO 11: single click = **Next** by default; hold (about 420 ms) = **Select** (always fixed)
+- GPIO 12: single click = **Previous** by default; hold (about 420 ms) = **Back** (always fixed)
 - Tap directions can be reversed in **Controls**, page 6, or in the paired browser control center.
 - The third hardware power/reset button is **not** configured as an app navigation button.
 
@@ -67,8 +67,8 @@ If the screen is black after a verified flash, capture 115200 baud serial boot o
 
 The JohnnyOS StickS3 firmware uses two menu buttons (plus separate power/reset).
 
-- GPIO11 / KEY1: tap **Next** (or Previous when swapped), double-click or hold **Select**
-- GPIO12 / KEY2: tap **Previous** (or Next when swapped), double-click or hold **Back**
+- GPIO11 / KEY1: tap **Next** (or Previous when swapped), hold **Select**
+- GPIO12 / KEY2: tap **Previous** (or Next when swapped), hold **Back**
 - Open **Controls**, page 6, to switch tap directions on-device; the selection and Back holds are never remapped.
 
 ### Phone web remote
@@ -93,7 +93,7 @@ The browser's **Offline assistant** section accepts typed questions over the loc
 
 ### Visual and controls refresh (v0.5 source)
 
-The home screen paints 30×30 app icons centered inside three-column rounded cards; selection changes repaint only affected cards. The two-button driver responds to click events without the old 200 ms polling gate. The browser controller can reverse short-tap direction (Next/Previous), change the theme and select Eco/Balanced/Bright; settings are validated and applied from the menu task, then saved in NVS. Long/double-tap actions retain Select and Back for safe recovery.
+The home screen paints 30×30 app icons centered inside three-column rounded cards; selection changes repaint only affected cards. The two-button driver responds to click events without the old 200 ms polling gate. The browser controller can reverse short-tap direction (Next/Previous), change the theme and select Eco/Balanced/Bright; settings are validated and applied from the menu task, then saved in NVS. Hold actions retain Select and Back for safe recovery.
 
 GitHub Actions is configured for **manual workflow_dispatch** builds only to avoid the previous flood of cancelled build jobs. The latest successful build must match the commit that contains these source changes. Do not flash an older v0.4 artifact expecting v0.5 features.
 
@@ -130,6 +130,16 @@ New native apps:
 7. Pair the local browser, navigate the home menu, use the gamepad in a game and save preferences.
 8. Record voice activity through the mic, and **do not** interpret activity detection as speech recognition.
 9. Measure battery and responsiveness on physical hardware; code-level optimization does not prove a particular speed or battery improvement.
+
+## FastTap Visual Edition v0.7
+
+**Fast navigation:** The StickS3 now samples GPIO11/GPIO12 directly at about 5 ms intervals, applies a 14 ms debounce filter, and dispatches short clicks as soon as the button is released instead of waiting for the previous double-click detection window. A bounded, fixed-size FIFO queues up to 24 navigation actions in their original order so rapid taps don't overwrite each other. The previous extra 10 ms menu navigation pause was shortened. Navigation processing never erases pending flags just because another input scan occurs.
+
+**Changed button shortcut:** Two quick taps now mean **two Next/Previous movements**, not Select/Back. Hold Key1 for about **420 ms** to Select. Hold Key2 for about **420 ms** to Back. These hold actions stay fixed if you reverse tap directions under Controls. A press that wakes a dark screen doesn't also activate an unseen app. This tradeoff prioritizes immediate repeated taps over delayed double-click shortcuts.
+
+**Visual polish:** Home app cards have softly outlined frosted surfaces and a consistent icon box, selected titles get a higher-contrast treatment, labels are shortened when needed, and small page indicator dots replace the crowded fraction. Rendering still updates only the old and new icon cards instead of blanking the entire screen.
+
+**Physical test:** Rapidly tap Key1 at different speeds, then reverse directions and repeat. Verify both holds still enter/exit apps; test waking the LCD while it is off; confirm the launcher stays aligned in landscape and portrait. Check burst navigation across page boundaries and original Bruce submenu tools. Compilation success does not establish measured button latency, TFT frame rate, or device reliability.
 
 ## Status
 
