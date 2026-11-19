@@ -61,11 +61,11 @@ void showAI() {
     uint8_t persona = prefs.getUChar("persona", 0) % 3;
     prefs.end();
     clearInputs();
-    uint32_t drawn = 0;
+    bool redrawAI = true;
     while (true) {
         if (check(EscPress)) break;
-        if (check(PrevPress)) { selected = (selected + 3) % 4; drawn = 0; }
-        if (check(NextPress)) { selected = (selected + 1) % 4; drawn = 0; }
+        if (check(PrevPress)) { selected = (selected + 3) % 4; redrawAI = true; }
+        if (check(NextPress)) { selected = (selected + 1) % 4; redrawAI = true; }
         if (check(SelPress)) {
             if (selected == 0) johnnyPushToTalk();
             else if (selected == 1) johnnyPlayLastVoice();
@@ -76,14 +76,14 @@ void showAI() {
                 prefs.putUChar("persona", persona);
                 prefs.end();
             }
-            drawn = 0;
+            redrawAI = true;
             clearInputs();
         }
-        if (millis() - drawn >= 180) {
-            drawn = millis();
+        if (redrawAI) {
+            redrawAI = false;
             titleBar("Johnny AI", WiFi.isConnected() ? "Wi-Fi ready" : "Offline");
             const int cx = 61, cy = 73;
-            const int pulse = 1 + (millis() / 180) % 5;
+            const int pulse = 2; // stable orb; no full-screen animation flashing
             tft.drawCircle(cx, cy, 28 + pulse, color(54, 81, 178));
             tft.fillCircle(cx, cy, 25 + pulse, color(54, 93, 207));
             tft.fillCircle(cx - 5, cy - 6, 17, color(132, 112, 247));
@@ -108,26 +108,28 @@ void showAI() {
     clearInputs();
 }
 void showSystem() {
-    while (true) {
-        titleBar("Device", "StickS3");
-        tft.setTextColor(TEXT);
-        tft.drawString("Battery", 15, 36, 1);
-        tft.drawRightString(String(getBattery()) + "%", 217, 36, 1);
-        tft.drawString("Flash", 15, 54, 1);
-        tft.drawRightString(String(ESP.getFlashChipSize() / 1048576) + " MB", 217, 54, 1);
-        tft.drawString("PSRAM", 15, 72, 1);
-        tft.drawRightString(String(ESP.getPsramSize() / 1048576) + " MB", 217, 72, 1);
-        tft.drawString("Free heap", 15, 90, 1);
-        tft.drawRightString(String(ESP.getFreeHeap() / 1024) + " KB", 217, 90, 1);
-        footer("Hold PREV to return");
-        if (check(EscPress)) break;
-        delay(200);
-    }
+    // One stable screen per visit, rather than repainting the entire LCD at 5 Hz.
+    titleBar("Device", "StickS3");
+    tft.setTextColor(TEXT);
+    tft.drawString("Battery", 15, 36, 1);
+    tft.drawRightString(String(getBattery()) + "%", 217, 36, 1);
+    tft.drawString("Flash", 15, 54, 1);
+    tft.drawRightString(String(ESP.getFlashChipSize() / 1048576) + " MB", 217, 54, 1);
+    tft.drawString("PSRAM", 15, 72, 1);
+    tft.drawRightString(String(ESP.getPsramSize() / 1048576) + " MB", 217, 72, 1);
+    tft.drawString("Free heap", 15, 90, 1);
+    tft.drawRightString(String(ESP.getFreeHeap() / 1024) + " KB", 217, 90, 1);
+    footer("Hold PREV to return");
+    clearInputs();
+    while (!check(EscPress)) delay(80);
     clearInputs();
 }
 void showSettings() {
     clearInputs();
+    bool redrawSettings = true;
     while (true) {
+        if (redrawSettings) {
+        redrawSettings = false;
         titleBar("Appearance", "Saved in NVS");
         const char *themes[] = {"OCEAN", "VIOLET", "MINT"};
         tft.fillRoundRect(12, 34, 216, 62, 15, panelColor());
@@ -136,8 +138,9 @@ void showSettings() {
         tft.drawString("JohnnyOS theme", 89, 46, 1);
         tft.drawString(themes[johnnyTheme()], 89, 69, 2);
         footer("Next: change  Hold PREV: back");
+        }
         if (check(EscPress)) break;
-        if (check(NextPress) || check(SelPress)) johnnyCycleTheme();
+        if (check(NextPress) || check(SelPress)) { johnnyCycleTheme(); redrawSettings = true; }
         delay(30);
     }
     clearInputs();
