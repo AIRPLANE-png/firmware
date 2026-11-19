@@ -18,8 +18,8 @@ private:
 };
 
 // Navigation mapping: only the two short presses may be swapped.
-// Long/double KEY1 remains Select, long/double KEY2 remains Back so
-// the device always has a predictable way to exit menus.
+// Hold KEY1 remains Select, hold KEY2 remains Back. Rapid double taps
+// are two navigation steps instead of a slow Select/Back shortcut.
 extern volatile bool johnnySwapNavigation;
 void johnnyLoadControls();
 bool johnnyNavigationSwap();
