@@ -104,7 +104,7 @@ void johnnyOfflineChat() {
             tft.drawRightString("ON DEVICE", tftWidth - 9, 11, 1);
             tft.fillRoundRect(9, 29, tftWidth - 18, 86, 10, tft.color565(25, 37, 70));
             tft.setTextColor(soft);
-            tft.drawString("TOPIC " + String(index + 1) + "/" + String(count), 17, 36, 1);
+            tft.drawString(String("TOPIC ") + String(index + 1) + "/" + String(count), 17, 36, 1);
             tft.setTextColor(white);
             tft.drawString(String(topics[index]).substring(0, 32), 17, 49, 1);
             if (!showAnswer) {
@@ -113,12 +113,12 @@ void johnnyOfflineChat() {
                 tft.drawString("Tap keys to browse topics", 17, 86, 1);
             } else {
                 String answer = johnnyOfflineReply(String(topics[index]));
-                const int pages = max(1, ((int)answer.length() + 149) / 150);
+                const int pages = max(1, ((int)answer.length() + 119) / 120);
                 if (answerPage >= pages) answerPage = pages - 1;
                 tft.setTextColor(soft);
                 // Five compact lines per page to avoid truncating long replies.
-                String segment = answer.substring(answerPage * 150,
-                                                 min((answerPage + 1) * 150, (int)answer.length()));
+                String segment = answer.substring(answerPage * 120,
+                                                 min((answerPage + 1) * 120, (int)answer.length()));
                 int start = 0, y = 65;
                 while (start < (int)segment.length() && y <= 105) {
                     int stop = min(start + 34, (int)segment.length());
