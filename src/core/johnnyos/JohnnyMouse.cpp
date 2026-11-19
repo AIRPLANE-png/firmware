@@ -114,8 +114,14 @@ void johnnyMouse() {
                     sendMouseReport(report, 0, 0, 0);
                 } else if (dx || dy) sendMouseReport(report, 0, dx, dy);
             }
-            if (millis() - lastDraw > 160 || priorConnected != mouseConnected) {
+            if (lastDraw == 0 || priorConnected != mouseConnected) {
                 mouseScreen(mouseConnected, dx, dy);
+                lastDraw = millis();
+            } else if (millis() - lastDraw > 300) {
+                // Only update the small motion readout, not the entire screen.
+                tft.fillRoundRect(91, 60, 125, 15, 4, tft.color565(27,39,75));
+                tft.setTextColor(TFT_WHITE);
+                tft.drawString(String("X ") + dx + "  Y " + dy, 92, 62, 1);
                 lastDraw = millis();
             }
         }
