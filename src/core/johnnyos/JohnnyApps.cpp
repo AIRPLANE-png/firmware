@@ -153,28 +153,44 @@ void showWifi() {
     int found = WiFi.scanNetworks(false, true);
     if (found < 0) { note("Wi-Fi scanning failed"); return; }
     int selected = 0;
-    int count = found < 24 ? found : 24;
+    const int count = min(found, 24);
+    int lastSelected = -1;
+    int lastStart = -1;
+    bool redraw = true;
+    auto row = [&](int idx, bool active, int start) {
+        const int y = 27 + (idx - start) * 21;
+        if (idx < start || idx >= start + 4 || idx >= count) return;
+        tft.fillRoundRect(9, y, 222, 19, 7,
+                          active ? color(59, 97, 188) : color(25, 38, 72));
+        tft.setTextColor(active ? TEXT : dimColor());
+        tft.drawString(WiFi.SSID(idx).substring(0, 23), 16, y + 5, 1);
+        tft.drawRightString(String(WiFi.RSSI(idx)) + "dBm", 222, y + 5, 1);
+    };
     while (true) {
-        titleBar("Nearby networks", String(found) + " APs");
-        if (count == 0) {
-            tft.setTextColor(TEXT);
-            tft.drawCentreString("No nearby networks", tftWidth / 2, 60, 1);
+        const int start = selected / 4 * 4;
+        if (redraw || start != lastStart) {
+            titleBar("Nearby networks", String(found) + " APs");
+            if (count == 0) {
+                tft.setTextColor(TEXT);
+                tft.drawCentreString("No nearby networks", tftWidth / 2, 60, 1);
+            } else {
+                for (int i = start; i < min(start + 4, count); i++)
+                    row(i, i == selected, start);
+            }
+            footer("Short: scroll  Hold PREV: back");
+            redraw = false;
+        } else if (lastSelected != selected) {
+            row(lastSelected, false, start);
+            row(selected, true, start);
         }
-        for (int j = 0; j < 4 && j < count; ++j) {
-            int idx = selected / 4 * 4 + j;
-            if (idx >= count) break;
-            int y = 27 + j * 21;
-            if (idx == selected) tft.fillRoundRect(9, y, 222, 19, 7, color(59, 97, 188));
-            tft.setTextColor(idx == selected ? TEXT : dimColor());
-            tft.drawString(WiFi.SSID(idx).substring(0, 23), 16, y + 5, 1);
-            tft.drawRightString(String(WiFi.RSSI(idx)) + "dBm", 222, y + 5, 1);
-        }
-        footer("Short: scroll  Hold PREV: back");
+        lastSelected = selected;
+        lastStart = start;
         if (check(EscPress)) break;
         if (count > 0 && check(NextPress)) selected = (selected + 1) % count;
         if (count > 0 && check(PrevPress)) selected = (selected + count - 1) % count;
         if (check(SelPress) && count > 0) {
             note(String("Ch ") + WiFi.channel(selected) + "  " + WiFi.SSID(selected).substring(0, 17));
+            redraw = true;
         }
         delay(25);
     }
