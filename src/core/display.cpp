@@ -854,6 +854,15 @@ int loopOptions(
                 if (prevEnabled >= 0) index = prevEnabled;
                 redraw = true;
 #else
+#if defined(JOHNNYOS_STICKS3)
+                // StickS3 GPIO button driver already distinguishes short/long
+                // presses and emits EscPress for Back. The generic Bruce
+                // 700ms wait and animated hold arc only caused input lag.
+                check(PrevPress);
+                int prevEnabled = findNextEnabled(index, -1);
+                if (prevEnabled >= 0) index = prevEnabled;
+                redraw = true;
+#else
                 long _tmp = millis();
 #ifndef HAS_ENCODER // T-Embed doesn't need it
                 LongPress = true;
@@ -885,6 +894,7 @@ int loopOptions(
                     if (prevEnabled >= 0) index = prevEnabled;
                     redraw = true;
                 }
+#endif // !JOHNNYOS_STICKS3
 #endif
             }
             /* DW Btn to next item */
@@ -904,7 +914,11 @@ int loopOptions(
         */
         // Prevent immediate selection if the SEL button was already being held when the menu opened.
         // Allow a short grace period for the user to release the button first.
+#if defined(JOHNNYOS_STICKS3)
+        static const unsigned long MENU_SELECT_IGNORE_MS = 250;
+#else
         static const unsigned long MENU_SELECT_IGNORE_MS = 600; // ms to ignore SEL after menu opens
+#endif
 
         if (forceMenuOption >= 0 || (millis() - menuOpenTs > MENU_SELECT_IGNORE_MS && check(SelPress))) {
             uint16_t chosen = index;
