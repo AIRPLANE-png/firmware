@@ -120,6 +120,12 @@ void MainMenu::begin(void) {
         _gridScroll = 0;
         _gridLastIndex = -1;
         _gridRedrawAll = true;
+#if defined(JOHNNYOS_STICKS3)
+        _johnnyLastIndex = -1;
+        _johnnyLastPage = -1;
+        _johnnyLastCount = -1;
+        _johnnyLastTheme = 255;
+#endif
         mainMenuGridColumns = _grid.cols;
     } else {
         mainMenuGridColumns = 0;
@@ -152,7 +158,12 @@ void MainMenu::drawJohnnyLauncher(int index) {
         tft.color565(232, 83, 119), tft.color565(53, 159, 245),
         tft.color565(143, 151, 170), tft.color565(95, 217, 171)
     };
-    johnnyDrawWallpaper();
+    // Keep the current page in display RAM. Only repaint on page changes.
+    const uint8_t theme = johnnyTheme();
+    const bool full = _johnnyLastIndex < 0 || _johnnyLastPage != page ||
+                      _johnnyLastCount != count || _johnnyLastTheme != theme;
+    if (full) {
+        johnnyDrawWallpaper();
     tft.setTextSize(1);
     tft.setTextColor(white);
     tft.drawString("Johnny", 9, 5, 2);
@@ -162,8 +173,10 @@ void MainMenu::drawJohnnyLauncher(int index) {
     tft.drawRightString(String(getBattery()) + "%", tftWidth - 8, 7, 1);
     tft.drawFastHLine(9, 23, tftWidth - 18, tft.color565(64, 79, 129));
 
+    }
     const int cellW = (tftWidth - 10) / cols;
     for (int i = page * perPage; i < min(count, (page + 1) * perPage); i++) {
+        if (!full && i != index && i != _johnnyLastIndex) continue;
         const int local = i - page * perPage;
         const int x = 5 + (local % cols) * cellW;
         const int y = 28 + (local / cols) * 46;
@@ -175,6 +188,18 @@ void MainMenu::drawJohnnyLauncher(int index) {
         options[i].y = y;
         options[i].w = cellW;
         options[i].h = 45;
+        if (!full) {
+            // Recreate only the old/new icon cell background, not the screen.
+            for (int sy = y - 3; sy < y + 44 && sy < tftHeight - 17; sy += 2) {
+                int d = sy < tftHeight / 2 ? sy : tftHeight - sy;
+                uint16_t c = theme == 1
+                    ? tft.color565(23 + d / 4, 12 + d / 6, 56 + d / 2)
+                    : theme == 2
+                    ? tft.color565(8 + d / 7, 32 + d / 4, 37 + d / 3)
+                    : tft.color565(10 + d / 5, 17 + d / 4, 47 + d / 2);
+                tft.fillRect(x, sy, cellW, 2, c);
+            }
+        }
 
         const uint16_t mainColor = accent[i % 8];
         if (selected) {
@@ -254,11 +279,17 @@ void MainMenu::drawJohnnyLauncher(int index) {
         tft.setTextColor(selected ? white : muted);
         tft.drawCentreString(label.substring(0, 9), cx, iconY + 34, 1);
     }
+    if (full) {
     // Native input map: GPIO11 next / hold select; GPIO12 previous / hold back.
     tft.fillRoundRect(8, 121, tftWidth - 16, 12, 5, tft.color565(16, 26, 56));
     tft.setTextColor(muted);
     tft.drawString("Tap: move  Hold: select/back", 13, 124, 1);
     tft.drawRightString(String(page + 1) + "/" + String((count + 7) / 8), tftWidth - 10, 124, 1);
+    }
+    _johnnyLastIndex = index;
+    _johnnyLastPage = page;
+    _johnnyLastCount = count;
+    _johnnyLastTheme = theme;
 }
 
 #endif
