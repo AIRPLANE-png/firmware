@@ -56,56 +56,63 @@ void note(const String &message) {
 }
 void showAI() {
     int selected = 0;
+    int previousSelection = -1;
+    bool full = true;
     const char *choices[] = {"Push-to-talk", "Play last voice", "AI service status", "Personality"};
     const char *personas[] = {"Friendly", "Tech", "Concise"};
     Preferences prefs;
     prefs.begin("johnnyos", true);
     uint8_t persona = prefs.getUChar("persona", 0) % 3;
     prefs.end();
+    auto drawAIChoice = [&](int i) {
+        if (i < 0 || i >= 4) return;
+        const int y = 27 + i * 22;
+        const bool active = selected == i;
+        tft.fillRoundRect(111, y, 121, 19, 7,
+                          active ? color(66, 102, 212) : panelColor());
+        tft.setTextSize(1);
+        tft.setTextColor(active ? TEXT : dimColor());
+        String label = i == 3 ? String("Style: ") + personas[persona] : choices[i];
+        tft.drawString(label, 118, y + 5, 1);
+    };
     clearInputs();
-    bool redrawAI = true;
     while (true) {
         if (check(EscPress)) break;
-        if (check(PrevPress)) { selected = (selected + 3) % 4; redrawAI = true; }
-        if (check(NextPress)) { selected = (selected + 1) % 4; redrawAI = true; }
+        if (check(PrevPress)) selected = (selected + 3) % 4;
+        if (check(NextPress)) selected = (selected + 1) % 4;
         if (check(SelPress)) {
-            if (selected == 0) johnnyPushToTalk();
-            else if (selected == 1) johnnyPlayLastVoice();
-            else if (selected == 2) note("Online AI needs a secure service");
+            if (selected == 0) { johnnyPushToTalk(); full = true; }
+            else if (selected == 1) { johnnyPlayLastVoice(); full = true; }
+            else if (selected == 2) { note("Online AI needs a secure service"); full = true; }
             else {
                 persona = (persona + 1) % 3;
                 prefs.begin("johnnyos", false);
                 prefs.putUChar("persona", persona);
                 prefs.end();
+                drawAIChoice(3);
             }
-            redrawAI = true;
             clearInputs();
         }
-        if (redrawAI) {
-            redrawAI = false;
+        if (full) {
+            full = false;
             titleBar("Johnny AI", WiFi.isConnected() ? "Wi-Fi ready" : "Offline");
             const int cx = 61, cy = 73;
-            const int pulse = 2; // stable orb; no full-screen animation flashing
-            tft.drawCircle(cx, cy, 28 + pulse, color(54, 81, 178));
-            tft.fillCircle(cx, cy, 25 + pulse, color(54, 93, 207));
+            tft.drawCircle(cx, cy, 30, color(54, 81, 178));
+            tft.fillCircle(cx, cy, 27, color(54, 93, 207));
             tft.fillCircle(cx - 5, cy - 6, 17, color(132, 112, 247));
             tft.fillCircle(cx - 9, cy - 10, 8, color(210, 176, 255));
             tft.setTextColor(TEXT);
             tft.drawCentreString("AI", cx, cy - 3, 1);
-            for (int i = 0; i < 4; ++i) {
-                const int y = 27 + i * 22;
-                const bool active = selected == i;
-                if (active) tft.fillRoundRect(111, y, 121, 19, 7, color(66, 102, 212));
-                tft.setTextColor(active ? TEXT : dimColor());
-                String label = choices[i];
-                if (i == 3) label = String("Style: ") + personas[persona];
-                tft.drawString(label, 118, y + 5, 1);
-            }
             tft.setTextColor(dimColor());
             tft.drawCentreString("NO AI SERVICE", cx, 111, 1);
+            for (int i = 0; i < 4; ++i) drawAIChoice(i);
             footer("Short: move  Hold: select / back");
+        } else if (previousSelection != selected) {
+            drawAIChoice(previousSelection);
+            drawAIChoice(selected);
         }
-        delay(12);
+        previousSelection = selected;
+        delay(20); // draw-free idle loop; responsive to hardware button events
     }
     clearInputs();
 }
