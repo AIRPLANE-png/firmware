@@ -2,6 +2,8 @@
 #include "display.h"
 #include "utils.h"
 #include <globals.h>
+#include <algorithm>
+#include <WiFi.h>
 
 MainMenu::MainMenu() {
     _menuItems = {
@@ -18,6 +20,10 @@ MainMenu::MainMenu() {
         &johnnyMouse,
         &johnnyMedia,
         &johnnyHelp,
+        &johnnyCalc,
+        &johnnyFilesPlus,
+        &johnnyHome,
+        &johnnyPerf,
 #endif
         &wifiMenu,
 #if !defined(JOHNNYOS_STICKS3)
@@ -104,7 +110,13 @@ void MainMenu::begin(void) {
             options.push_back(
                 {// selected lambda
                  itemName,
-                 [this, i]() { _menuItems[i]->optionsMenu(); },
+                 [this, i]() {
+#if defined(JOHNNYOS_STICKS3)
+                     // Legacy apps retain landscape coordinate assumptions.
+                     johnnyPrepareAppScreen();
+#endif
+                     _menuItems[i]->optionsMenu();
+                 },
                  false, // selected = false
                  renderItem,
                  _menuItems[i]
@@ -112,6 +124,28 @@ void MainMenu::begin(void) {
             );
         }
     }
+
+#if defined(JOHNNYOS_STICKS3)
+    // Remember the user's preferred order. The pinned favorite always appears
+    // first, making it the quickest item to reach with two hardware keys.
+    const String savedOrder = String("|") + johnnyHomeOrder();
+    const String favorite = johnnyFavorite();
+    auto priority = [&](const Option &a) -> int {
+        if (a.label == favorite) return -100;
+        int pos = savedOrder.indexOf(String("|") + a.label + "|");
+        return pos < 0 ? 10000 : pos;
+    };
+    std::stable_sort(options.begin(), options.end(),
+                     [&](const Option &a, const Option &b) {
+                         return priority(a) < priority(b);
+                     });
+    // Portrait is launcher-only. Every app resets to landscape on entry.
+    const uint8_t rotation = johnnyPortrait() ? 0 : 3;
+    tft.setRotation(rotation);
+    bruceConfigPins.rotation = rotation;
+    tftWidth = tft.width();
+    tftHeight = tft.height();
+#endif
 
     // The grid needs a fresh full repaint every time we come back to the main menu,
     // since loopOptions clears the screen before the first render.
@@ -148,7 +182,8 @@ void MainMenu::drawJohnnyLauncher(int index) {
     const int count = (int)options.size();
     if (count == 0) return;
     index = constrain(index, 0, count - 1);
-    const int cols = 3;
+    const bool portrait = johnnyPortrait();
+    const int cols = portrait ? 2 : 3;
     const int perPage = 6;
     const int page = index / perPage;
     const uint16_t white = tft.color565(248, 251, 255);
@@ -181,7 +216,7 @@ void MainMenu::drawJohnnyLauncher(int index) {
         if (!full && i != index && i != _johnnyLastIndex) continue;
         const int local = i - page * perPage;
         const int x = 5 + (local % cols) * cellW;
-        const int y = 28 + (local / cols) * 46;
+        const int y = portrait ? (31 + (local / cols) * 62) : (28 + (local / cols) * 46);
         const int cx = x + cellW / 2;
         const int iconX = cx - 15;
         const int iconY = y + 1;
@@ -189,15 +224,15 @@ void MainMenu::drawJohnnyLauncher(int index) {
         options[i].x = x;
         options[i].y = y;
         options[i].w = cellW;
-        options[i].h = 45;
+        options[i].h = portrait ? 57 : 45;
         // One opaque rounded card per app. Restoring the exact same compact
         // card on incremental repaints is much faster than re-creating the
         // wallpaper gradient, and keeps all artwork inside its own tile.
-        tft.fillRoundRect(x + 3, y - 2, cellW - 6, 44, 10,
+        tft.fillRoundRect(x + 3, y - 2, cellW - 6, portrait ? 56 : 44, 10,
                           selected ? tft.color565(36, 53, 96)
                                    : tft.color565(22, 32, 65));
         if (selected)
-            tft.drawRoundRect(x + 3, y - 2, cellW - 6, 44, 10,
+            tft.drawRoundRect(x + 3, y - 2, cellW - 6, portrait ? 56 : 44, 10,
                               tft.color565(119, 161, 236));
 
         const String name = options[i].label;
@@ -276,6 +311,22 @@ void MainMenu::drawJohnnyLauncher(int index) {
         } else if (name == "Media") {
             tft.fillTriangle(cx - 8, iconY + 7, cx - 8, iconY + 24, cx + 7, iconY + 15, white);
             tft.fillRect(cx + 9, iconY + 9, 3, 12, white);
+        } else if (name == "Calculator") {
+            tft.drawRoundRect(cx-10,iconY+5,20,22,4,white);
+            tft.drawFastHLine(cx-6,iconY+11,12,white);
+            for(int by=0;by<2;++by)for(int bx=0;bx<3;++bx)
+                tft.fillCircle(cx-6+bx*6,iconY+17+by*6,1,white);
+        } else if (name == "Performance") {
+            tft.drawLine(cx-10,iconY+23,cx-4,iconY+16,white);
+            tft.drawLine(cx-4,iconY+16,cx+1,iconY+19,white);
+            tft.drawLine(cx+1,iconY+19,cx+9,iconY+8,white);
+        } else if (name == "Home Layout") {
+            for(int gy=0;gy<2;++gy)for(int gx=0;gx<2;++gx)
+                tft.fillRoundRect(cx-10+gx*12,iconY+7+gy*12,9,9,2,white);
+        } else if (name == "Files +") {
+            tft.fillRoundRect(cx-11,iconY+10,22,15,3,white);
+            tft.fillRect(cx-9,iconY+7,10,5,white);
+            tft.drawFastHLine(cx-7,iconY+17,14,mainColor);
         } else if (name == "Controls") {
             tft.drawCircle(cx, iconY + 15, 11, white);
             tft.fillCircle(cx, iconY + 9, 2, white);
@@ -295,11 +346,14 @@ void MainMenu::drawJohnnyLauncher(int index) {
     }
     if (full) {
     // Native input map: GPIO11 next / hold select; GPIO12 previous / hold back.
-    tft.fillRoundRect(8, 121, tftWidth - 16, 12, 5, tft.color565(16, 26, 56));
+    const int fy = tftHeight - 15;
+    tft.fillRoundRect(7, fy - 1, tftWidth - 14, 14, 5, tft.color565(16,26,56));
     tft.setTextColor(muted);
-    tft.drawString(johnnyNavigationSwap() ? "1:< 2:>  Hold 1:OK 2:Back" :
-                                               "1:> 2:<  Hold 1:OK 2:Back", 13, 124, 1);
-    tft.drawRightString(String(page + 1) + "/" + String((count + perPage - 1) / perPage), tftWidth - 10, 124, 1);
+    String dock = String("PIN: ") + johnnyFavorite();
+    dock = dock.substring(0, portrait ? 12 : 23);
+    tft.drawString(dock, 12, fy + 2, 1);
+    tft.drawRightString(String(page+1) + "/" + String((count+perPage-1)/perPage),
+                        tftWidth - 10, fy + 2, 1);
     }
     _johnnyLastIndex = index;
     _johnnyLastPage = page;
