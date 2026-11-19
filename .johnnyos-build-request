@@ -1,5 +1,4 @@
-# JohnnyOS Visual Edition v0.6 explicit build
-# Updated only after all source files and docs are committed.
-version=v0.6
-features=portrait-mute-wallpapers-favorite-layout-calculator-2048-files-performance-phone-dashboard
-build_request=visual-edition-first-compile
+# JohnnyOS FastTap Visual Edition v0.7
+version=v0.7
+features=instant-short-press-fifo-14ms-debounce-420ms-hold-premium-tiles-page-dots
+one_shot_build=fast-tap-visual-polish
