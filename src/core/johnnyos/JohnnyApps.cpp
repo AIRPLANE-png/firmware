@@ -424,7 +424,9 @@ void showGames() {
         {"Pong", []() { playGame(1); }},
         {"Reaction", []() { playGame(2); }},
         {"Mini Racing", []() { playGame(3); }},
-        {"Flappy", []() { playGame(4); }}
+        {"Flappy", []() { playGame(4); }},
+        {"2048 Puzzle", []() { johnnyPuzzle2048(); }},
+        {"Memory Duel", []() { johnnyQuickGame(); }}
     };
     addOptionToMainMenu();
     loopOptions(options, MENU_TYPE_SUBMENU, "Johnny Games");
@@ -700,6 +702,10 @@ void JohnnyMenuItem::optionsMenu() {
         case MOUSE: johnnyMouse(); break;
         case MEDIA: johnnyMediaRemote(); break;
         case HELP: showControls(); break;
+        case CALCULATOR: johnnyCalculator(); break;
+        case FILES_PLUS: johnnyFilesPlus(); break;
+        case HOME_LAYOUT: johnnyHomeLayout(); break;
+        case PERFORMANCE: johnnyPerformance(); break;
     }
 }
 void JohnnyMenuItem::drawIcon(float) {
