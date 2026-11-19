@@ -112,6 +112,7 @@ private:
     int _johnnyLastCount = -1;
     uint8_t _johnnyLastTheme = 255;
     bool _johnnyLastSwap = false;
+    uint8_t _johnnyLastWallpaper = 255;
 #endif
 };
 extern MainMenu mainMenu;
