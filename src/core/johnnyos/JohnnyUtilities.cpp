@@ -2,6 +2,7 @@
 
 #if defined(JOHNNYOS_STICKS3)
 #include "core/main_menu.h"
+#include "core/johnnyos/JohnnyExtras.h"
 #include "core/display.h"
 #include "core/utils.h"
 #include <LittleFS.h>
@@ -54,6 +55,7 @@ void johnnyCalculator() {
     };
     drain();
     while(true){
+        johnnyPumpRemoteButtons();
         if(check(EscPress))break;
         if(check(NextPress))sel=(sel+1)%20;
         if(check(PrevPress))sel=(sel+19)%20;
@@ -119,6 +121,7 @@ void johnnyFilesPlus() {
     };
     drain();
     while(true){
+        johnnyPumpRemoteButtons();
         if(check(EscPress))break;
         if(check(NextPress)&&!files.empty())sel=(sel+1)%files.size();
         if(check(PrevPress)&&!files.empty())sel=(sel+files.size()-1)%files.size();
@@ -133,7 +136,7 @@ void johnnyFilesPlus() {
                     line=file.readStringUntil('\n');
                     tft.drawString(trimmed(line,35),10,52+row*12,1);
                 }
-                file.close();drain();while(!check(EscPress))delay(25);drain();full=true;
+                file.close();drain();while(true){johnnyPumpRemoteButtons();if(check(EscPress))break;delay(25);}drain();full=true;
             } else alert("Directory preview unavailable");
             full=true;
         }
@@ -207,6 +210,7 @@ void johnnyHomeLayout() {
     };
     drain();
     while(true){
+        johnnyPumpRemoteButtons();
         if(check(EscPress)){if(action==EDIT){action=BROWSE;full=true;}else break;}
         if(action==BROWSE){
             if(check(NextPress))sel=(sel+1)%names.size();
@@ -288,6 +292,7 @@ void johnnyPuzzle2048() {
     };
     drain();spawn();spawn();
     while(true){
+        johnnyPumpRemoteButtons();
         if(check(EscPress))break;
         if(check(NextPress)){direction=(direction+1)%4;redraw=true;}
         if(check(PrevPress)){direction=(direction+3)%4;redraw=true;}
@@ -345,6 +350,6 @@ void johnnyQuickGame() {
     }
     frame("Memory Duel","Hold Key 2: exit");
     tft.setTextColor(W);tft.drawCentreString("Reached round "+String(round),120,66,2);
-    drain();while(!check(EscPress))delay(25);drain();
+    drain();while(true){johnnyPumpRemoteButtons();if(check(EscPress))break;delay(25);}drain();
 }
 #endif
