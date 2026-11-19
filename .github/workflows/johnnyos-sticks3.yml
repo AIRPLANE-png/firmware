@@ -59,7 +59,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: JohnnyOS-StickS3-UI-Refresh-v0.3
+          name: JohnnyOS-StickS3-Performance-v0.4
           path: |
             JohnnyOS-m5stack-sticks3.bin
             JOHNNYOS_FLASHING.md
