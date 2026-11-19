@@ -104,12 +104,10 @@ catch(e){say(e.message||'Connection failed')}
 async function saveSettings(){
 if(!valid())return;
 try{
-for(const kind of ['nav','theme','power']){
-let v=$(kind).value;
-let r=await fetch('/settings?kind='+kind+'&value='+v,{method:'POST',headers:headers(),cache:'no-store'});
-if(!r.ok)throw Error(r.status===403?'Pairing code incorrect':r.status===429?'Device busy, try again':'Could not apply '+kind);
-}
-say('Settings sent. The device applies them from its menu.');
+let params=new URLSearchParams({nav:$('nav').value,theme:$('theme').value,power:$('power').value});
+let r=await fetch('/settings?'+params.toString(),{method:'POST',headers:headers(),cache:'no-store'});
+if(!r.ok)throw Error(r.status===403?'Pairing code incorrect':r.status===429?'Device busy, try again':'Could not apply preferences');
+say('Settings sent together. Return to the device menu to apply.');
 }catch(e){say(e.message||'Unable to save settings')}
 }
 </script></body></html>
