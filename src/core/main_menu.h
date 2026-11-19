@@ -67,6 +67,7 @@ public:
     void drawGrid(int index);
 #if defined(JOHNNYOS_STICKS3)
     void drawJohnnyLauncher(int index);
+    void drawJohnnyTile(int index, bool selected);
 #endif
     int gridIndexOf(MenuItemInterface *item);
 
@@ -102,6 +103,12 @@ private:
     int _gridLastIndex = -1;
     uint8_t _gridRotation = ROTATION;
     bool _gridRedrawAll = true;
+#if defined(JOHNNYOS_STICKS3)
+    int _johnnyLastIndex = -1;
+    int _johnnyLastPage = -1;
+    int _johnnyLastCount = -1;
+    uint8_t _johnnyLastTheme = 255;
+#endif
 };
 extern MainMenu mainMenu;
 
