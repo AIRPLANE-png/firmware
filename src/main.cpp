@@ -562,7 +562,11 @@ void setup() {
     bruceConfig.openThemeFile(bruceConfig.themeFS(), bruceConfig.themePath, false);
     if (!bruceConfig.instantBoot) {
         boot_screen_anim();
+#if !defined(JOHNNYOS_STICKS3)
+        // JohnnyOS is silent by default. Don't play the legacy Bruce boot
+        // jingle before users can apply their audio preference.
         startup_sound();
+#endif
     }
     if (bruceConfig.wifiAtStartup) {
         log_i("Loading Wifi at Startup");
